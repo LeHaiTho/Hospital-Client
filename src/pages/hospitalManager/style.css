@@ -1,0 +1,25 @@
+/* Đối với thanh cuộn trên mọi trình duyệt */
+.scroll-container {
+  height: 100vh; /* Hoặc chiều cao bạn muốn */
+  overflow-y: auto; /* Cho phép cuộn dọc */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #d6d4d4 #f1f1f1; /* Màu thanh cuộn và nền */
+}
+
+/* Đối với thanh cuộn trên Webkit (Chrome, Safari) */
+.scroll-container::-webkit-scrollbar {
+  width: 8px; /* Độ rộng của thanh cuộn */
+}
+
+.scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Màu nền của thanh cuộn */
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background: #888; /* Màu của thanh cuộn */
+  border-radius: 4px; /* Bo góc thanh cuộn */
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Màu của thanh cuộn khi hover */
+}
