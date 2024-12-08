@@ -16,6 +16,7 @@ import { useDispatch } from "react-redux";
 import { login, logout, setUserInfo } from "./redux/slices/authSlice";
 import axiosConfig from "./apis/axiosConfig";
 import ChangePasswordFirstLogin from "./pages/auth/ChangePasswordFirstLogin";
+import ExamResult from "./pages/auth/ExamResult";
 const App = () => {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -42,6 +43,7 @@ const App = () => {
         path="/change-password-first-login"
         element={<ChangePasswordFirstLogin />}
       />
+      <Route path="/exam-result" element={<ExamResult />} />
       <Route
         path="/admin/*"
         element={

@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Card, Col, Row, Input, Select, Checkbox, Table, Button } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import axiosInstance from "../../apis/axiosConfig";
-
 import "./style.css";
+
 const { Search } = Input;
 const { Meta } = Card;
 

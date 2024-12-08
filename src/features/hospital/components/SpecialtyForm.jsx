@@ -12,26 +12,38 @@ import {
   Col,
   Image,
   message,
+  Divider,
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import axiosInstance from "../../../apis/axiosConfig";
-
+import axiosConfig from "../../../apis/axiosConfig";
 const SpecialtyForm = ({ onFinish }) => {
   const [form] = Form.useForm();
   const [image, setImage] = useState(null);
   const [specialties, setSpecialties] = useState([]);
 
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const response = await axiosInstance.get("/specialties/list-to-select");
+  //       setSpecialties(response.specialties);
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   };
+  //   fetchData();
+  // }, []);
+  // console.log(specialties);
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axiosInstance.get("/specialties/list-to-select");
-        setSpecialties(response.specialties);
-      } catch (error) {
-        console.log(error);
-      }
+    const getSpecialties = async () => {
+      const response = await axiosConfig.get(
+        "/hospital-specialties/list-specialty-of-hospital"
+      );
+      setSpecialties(response.specialtiesOfSystem);
     };
-    fetchData();
+    getSpecialties();
   }, []);
+  console.log(specialties);
 
   const handleFinish = async (values) => {
     const formData = new FormData();
@@ -39,11 +51,13 @@ const SpecialtyForm = ({ onFinish }) => {
     formData.append("specialty", values.specialty);
     formData.append("name", values.name);
     formData.append("description", values.description);
+    formData.append("consultation_fee", values.consultation_fee);
     try {
-      const response = await axiosInstance.post(
+      const response = await axiosConfig.post(
         "/hospital-specialties/create-new",
         formData
       );
+
       message.success(response.message);
       form.resetFields();
       if (onFinish) {
@@ -60,89 +74,107 @@ const SpecialtyForm = ({ onFinish }) => {
   };
 
   return (
-    <Form form={form} layout="horizontal" onFinish={handleFinish}>
-      <Row gutter={16}>
-        <Col span={16}>
-          <Row>
-            <Col span={24}>
-              <Form.Item
-                name="specialty"
-                label="Chọn chuyên khoa"
-                rules={[
-                  { required: true, message: "Vui lòng chọn chuyên khoa" },
-                ]}
-              >
-                <Select>
-                  {specialties.map((item, index) => {
-                    return (
-                      <Select.Option key={index} value={item.id}>
-                        {item.name}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row>
-            <Col span={24}>
-              <Form.Item
-                name="name"
-                label="Tiêu đề chuyên khoa"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng nhập tiêu đề chuyên khoa",
-                  },
-                ]}
-              >
-                <Input placeholder="Nhập tiêu đề chuyên khoa" />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Col>
+    <Form
+      form={form}
+      onFinish={handleFinish}
+      style={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        border: "1px solid #e5e5e5",
+        padding: "20px",
+        borderRadius: "10px",
+      }}
+      layout="vertical"
+    >
+      <h2
+        style={{
+          fontSize: "16px",
+          fontWeight: "500",
+          textTransform: "uppercase",
+          textAlign: "center",
+        }}
+      >
+        Dịch vụ chuyên khoa của cơ sở y tế
+      </h2>
+      <Divider />
+      <Form.Item
+        name="specialty"
+        rules={[{ required: true, message: "Vui lòng chọn chuyên khoa" }]}
+      >
+        <Select style={{ width: "100%" }} placeholder="Chọn chuyên khoa">
+          {specialties.map((item, index) => {
+            return (
+              <Select.Option key={index} value={item.id}>
+                {item.name}
+              </Select.Option>
+            );
+          })}
+        </Select>
+      </Form.Item>
 
-        <Col span={8}>
-          <Row>
-            <Col span={24}>
-              <Form.Item
-                name="image"
-                label="Ảnh chuyên khoa"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng chọn ảnh chuyên khoa",
-                  },
-                ]}
-              >
-                <Upload
-                  onChange={onChangeImage}
-                  maxCount={1}
-                  beforeUpload={() => false}
-                >
-                  <Button icon={<UploadOutlined />}>Upload</Button>
-                </Upload>
-              </Form.Item>
-            </Col>
-          </Row>
-        </Col>
-      </Row>
-      <Row>
-        <Col span={24}>
-          <Form.Item
-            name="description"
-            label="Mô tả chuyên khoa"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng nhập mô tả chuyên khoa",
-              },
-            ]}
-          >
-            <Input.TextArea />
-          </Form.Item>
-        </Col>
-      </Row>
+      <Form.Item
+        name="name"
+        rules={[
+          {
+            required: true,
+            message: "Vui lòng nhập tiêu đề chuyên khoa",
+          },
+        ]}
+      >
+        <Input placeholder="Nhập tiêu đề chuyên khoa" />
+      </Form.Item>
+
+      <Form.Item
+        name="image"
+        rules={[
+          {
+            required: true,
+            message: "Vui lòng chọn ảnh thông tin chuyên khoa",
+          },
+        ]}
+      >
+        <Upload
+          onChange={onChangeImage}
+          maxCount={1}
+          beforeUpload={() => false}
+          accept="image/*"
+        >
+          <Button icon={<UploadOutlined />}>Upload</Button>
+        </Upload>
+      </Form.Item>
+
+      <Form.Item
+        name="consultation_fee"
+        rules={[
+          {
+            required: true,
+            message: "Vui lòng nhập phí khám",
+          },
+        ]}
+      >
+        <InputNumber
+          min={0}
+          style={{ width: "100%" }}
+          placeholder="Nhập phí khám"
+        />
+      </Form.Item>
+
+      <Form.Item
+        name="description"
+        rules={[
+          {
+            required: true,
+            message: "Vui lòng nhập mô tả chuyên khoa",
+          },
+        ]}
+      >
+        <Input.TextArea
+          style={{ width: "100%" }}
+          rows={4}
+          placeholder="Nhập mô tả chuyên khoa"
+        />
+      </Form.Item>
 
       <Form.Item>
         <Button type="primary" htmlType="submit">

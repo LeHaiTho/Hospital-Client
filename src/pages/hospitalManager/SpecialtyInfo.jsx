@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import SpecialtyForm from "../../features/hospital/components/SpecialtyForm";
 import { Table, Space, Tooltip, Button, Card, Row, Col } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import axiosInstance from "../../apis/axiosConfig";
+import axiosConfig from "../../apis/axiosConfig";
 import { truncateDescription } from "../../utils/common";
+import "./style.css";
 
 const SpecialtyInfo = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,27 +12,37 @@ const SpecialtyInfo = () => {
 
   const fetchData = async () => {
     try {
-      const response = await axiosInstance.get("/hospital-specialties/list");
+      const response = await axiosConfig.get("/hospital-specialties/list");
       setSpecialties(response.specialties);
       console.log("/hospital-specialties/list", response.specialties);
     } catch (error) {
       console.log(error);
     }
   };
+  console.log(specialties);
+  // useEffect(() => {
+  //   const getSpecialties = async () => {
+  //     const response = await axiosConfig.get(
+  //       "/hospital-specialties/list-specialty-of-hospital"
+  //     );
+  //     setSpecialties(response.specialtiesOfSystem);
+  //   };
+  //   getSpecialties();
+  // }, []);
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const columns = [
-    {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      align: "center",
-      width: "50px",
-      render: (text, record) => <div>{record.id}</div>,
-    },
+    // {
+    //   title: "ID",
+    //   dataIndex: "id",
+    //   key: "id",
+    //   align: "center",
+    //   width: "50px",
+    //   render: (text, record) => <div>{record.id}</div>,
+    // },
     {
       title: "Ảnh",
       dataIndex: "image",
@@ -51,35 +62,43 @@ const SpecialtyInfo = () => {
       ),
     },
     {
-      title: "Chuyên khoa",
+      title: "Nội dung dịch vụ",
       dataIndex: "name",
       key: "name",
       width: "auto",
       render: (text, record) => (
-        <p
-          style={{
-            color: "blue",
-            fontWeight: "bold",
-            fontSize: "16px",
-            fontStyle: "italic",
-          }}
-        >
-          {record.name}
-          <br />
-          <span
+        <div>
+          <p
             style={{
-              fontSize: "12px",
-              color: "gray",
+              fontWeight: "500",
+              fontSize: "16px",
             }}
           >
-            {truncateDescription(record.description, 50)}
+            {record.name}
+          </p>
+          <p style={{ fontStyle: "italic", color: "#797979" }}>
+            {truncateDescription(record.description, 100)}
+          </p>
+          <span style={{ fontSize: "12px", color: "#797979" }}>
+            Lượt khám: 39
           </span>
+        </div>
+      ),
+    },
+    {
+      title: "Phí khám",
+      dataIndex: "consultation_fee",
+      key: "consultation_fee",
+
+      render: (text, record) => (
+        <p style={{ fontStyle: "italic", color: "#0165ff", fontWeight: "500" }}>
+          {Number(record.consultation_fee).toLocaleString()}
         </p>
       ),
     },
 
     {
-      title: "Hành động",
+      title: "",
       key: "action",
       dataIndex: "action",
       align: "center",
@@ -88,7 +107,7 @@ const SpecialtyInfo = () => {
         <Space>
           <Tooltip placement="bottom" title="Chỉnh sửa">
             <Button
-              icon={<EditOutlined style={{ color: "blue" }} />}
+              icon={<EditOutlined />}
               onClick={() => handleEdit(record.id)}
               type="text"
             />
@@ -107,18 +126,33 @@ const SpecialtyInfo = () => {
     },
   ];
   return (
-    <>
-      <SpecialtyForm onFinish={fetchData} />
-
-      <Table
-        columns={columns}
-        size="small"
-        dataSource={specialties.map((specialty) => ({
-          ...specialty,
-          key: specialty.id,
-        }))}
-      />
-    </>
+    <div style={{ display: "flex", flexDirection: "row", gap: "20px" }}>
+      <div
+        style={{
+          backgroundColor: "#fff",
+          width: "30%",
+        }}
+      >
+        <SpecialtyForm onFinish={fetchData} />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          width: "100%",
+        }}
+      >
+        <Table
+          columns={columns}
+          size="small"
+          dataSource={specialties.map((specialty) => ({
+            ...specialty,
+            key: specialty.id,
+          }))}
+        />
+      </div>
+    </div>
   );
 };
 

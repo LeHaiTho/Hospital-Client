@@ -5,7 +5,9 @@
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: #d6d4d4 #f1f1f1; /* Màu thanh cuộn và nền */
 }
-
+.ant-select-outlined {
+  border-radius: none !important;
+}
 /* Đối với thanh cuộn trên Webkit (Chrome, Safari) */
 .scroll-container::-webkit-scrollbar {
   width: 8px; /* Độ rộng của thanh cuộn */
@@ -23,3 +25,30 @@
 .scroll-container::-webkit-scrollbar-thumb:hover {
   background: #555; /* Màu của thanh cuộn khi hover */
 }
+
+.ant-table-thead > tr > th.ant-table-cell {
+  background-color: #dbeafe !important;
+  color: #000 !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+  border: none !important;
+}
+
+.ant-table-tbody > tr:hover {
+  cursor: pointer !important;
+}
+
+/* .rbc-event {
+  background-color: #0165ff !important;
+  border-top-right-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+  border: none !important;
+} */
+
+/* .event-selected {
+  background-color: #cce0fe !important;
+  border-left: 6px solid #0165ff !important;
+} */
+/* .rbc-event-label {
+  display: none !important;
+} */

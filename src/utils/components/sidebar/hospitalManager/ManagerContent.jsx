@@ -20,6 +20,8 @@ const ManagerContent = () => {
       style={{
         minHeight: 280,
         padding: 16,
+        backgroundColor: "#fff",
+        margin: "16px",
       }}
     >
       <Routes>
