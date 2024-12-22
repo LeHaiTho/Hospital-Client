@@ -30,7 +30,6 @@
   background-color: #dbeafe !important;
   color: #000 !important;
   font-weight: 500 !important;
-  text-align: center !important;
   border: none !important;
 }
 
@@ -52,3 +51,7 @@
 /* .rbc-event-label {
   display: none !important;
 } */
+.ck-editor__editable_inline {
+  max-height: 200px;
+  min-height: 200px;
+}

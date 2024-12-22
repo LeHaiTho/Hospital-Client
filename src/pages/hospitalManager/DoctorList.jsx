@@ -42,6 +42,7 @@ import {
   Row,
   Col,
   Alert,
+  Spin,
 } from "antd";
 import { IoIosMore } from "react-icons/io";
 import { UploadOutlined, CheckCircleOutlined } from "@ant-design/icons";
@@ -52,12 +53,16 @@ import axiosConfig from "../../apis/axiosConfig";
 import dayjs from "dayjs";
 import { GoDotFill } from "react-icons/go";
 import moment from "moment";
-
+import { MdMarkEmailRead } from "react-icons/md";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 const { Search } = Input;
 const { confirm } = Modal;
 const { Option } = Select;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const handleChange = (value) => {
   console.log(`selected ${value}`);
@@ -90,6 +95,11 @@ const DoctorList = () => {
   const [editDoctor, setEditDoctor] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [image, setImage] = useState();
+  const [searchData, setSearchData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+
+  // Tìm kiếm bác sĩ
 
   console.log("doctorDetail", doctorDetail);
   // get doctor list
@@ -102,6 +112,24 @@ const DoctorList = () => {
   }, []);
   console.log("doctorList", doctorList);
 
+  const handleSearch = (event) => {
+    const value = event.target.value; // Lấy giá trị từ Input
+    setSearch(value); // Cập nhật giá trị input
+
+    if (value.trim() === "") {
+      setSearchData(doctorList); // Nếu input trống, hiển thị danh sách gốc
+    } else {
+      // Lọc danh sách
+      const searchDoctor = doctorList.filter((doctor) => {
+        return (
+          doctor.fullname.toLowerCase().includes(value.toLowerCase()) ||
+          doctor.email.toLowerCase().includes(value.toLowerCase()) ||
+          doctor.phone.toLowerCase().includes(value.toLowerCase())
+        );
+      });
+      setSearchData(searchDoctor); // Cập nhật danh sách hiển thị
+    }
+  };
   // check license code
   const checkLicenseCode = async (licenseCode) => {
     const response = await axiosConfig.get(
@@ -215,7 +243,10 @@ const DoctorList = () => {
       form.resetFields();
       setVisible(false);
       console.log(response);
-      NotificationComponent("success", "Thêm bác sĩ thành công");
+      NotificationComponent(
+        "success",
+        editMode ? "Cập nhật bác sĩ thành công" : "Thêm bác sĩ thành công"
+      );
       getDoctorList();
     } catch (error) {
       console.log(error);
@@ -254,7 +285,7 @@ const DoctorList = () => {
       render: (fullname) => (
         <p
           style={{
-            color: "#0165ff",
+            color: "#000",
             fontWeight: "500",
             textTransform: "uppercase",
           }}
@@ -268,39 +299,18 @@ const DoctorList = () => {
       title: "Chuyên khoa",
       dataIndex: "specialties",
       key: "specialties",
+
       render: (specialties) => (
         <p style={{ color: "#000" }}>
           {specialties.map((item) => item.name).join(", ")}
         </p>
       ),
     },
-    // {
-    //   title: "Lịch hẹn",
-    //   dataIndex: "schedule",
-    //   key: "schedule",
-    //   render: (schedule) => (
-    //     <div>
-    //       <Tag
-    //         style={{
-    //           cursor: "pointer",
-    //           backgroundColor: "#1677ff94",
-    //           color: "blue",
-    //           fontWeight: "500",
-    //           borderRadius: "0px",
-    //           border: "none",
-    //           padding: "5px 10px",
-    //         }}
-    //         icon={<CalendarOutlined />}
-    //       >
-    //         {schedule}
-    //       </Tag>
-    //     </div>
-    //   ),
-    // },
     {
       title: "Email",
       dataIndex: "email",
       key: "email",
+
       render: (email) => (
         <p
           style={{
@@ -310,7 +320,7 @@ const DoctorList = () => {
             fontSize: "14px",
           }}
         >
-          <MdOutlineMailOutline size={18} /> {email}
+          <MdMarkEmailRead size={18} color="#0165ff" /> {email}
         </p>
       ),
     },
@@ -375,12 +385,106 @@ const DoctorList = () => {
       },
     },
   ];
+  const exportToExcel = (data) => {
+    // Tạo dữ liệu để xuất
+    const excelData = data.map((record) => ({
+      "Họ và tên": record.fullname,
+      "Chuyên khoa": record.specialties.map((item) => item.name).join(", "),
+      Email: record.email,
+      "Số điện thoại": record.phone,
+      "Giá khám": record.consultation_fee[0]
+        ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
+        : "",
+      "Trạng thái": record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
+    }));
+
+    // Tạo một worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // Tạo một workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách bác sĩ");
+
+    // Xuất file
+    XLSX.writeFile(workbook, "DanhSachBacSi.xlsx");
+  };
+
+  const exportToPDF = (data) => {
+    const doc = new jsPDF();
+
+    // Tiêu đề
+    doc.setFontSize(18);
+    doc.text("DANH SÁCH BÁC SĨ", 14, 20);
+
+    // Ngày xuất file
+    doc.setFontSize(12);
+    doc.text(`Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`, 14, 30);
+
+    // Chuẩn bị dữ liệu bảng
+    const tableData = data.map((record, index) => [
+      index + 1,
+      record.fullname,
+      record.specialties.map((item) => item.name).join(", "),
+      record.email,
+      record.phone,
+      record.consultation_fee[0]
+        ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
+        : "",
+      record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
+    ]);
+
+    // Cấu hình bảng
+    doc.autoTable({
+      head: [
+        [
+          "STT",
+          "Họ và tên",
+          "Chuyên khoa",
+          "Email",
+          "Số điện thoại",
+          "Giá khám",
+          "Trạng thái",
+        ],
+      ],
+      body: tableData,
+      startY: 40,
+      theme: "grid",
+      headStyles: {
+        fillColor: [0, 123, 255],
+        textColor: [255, 255, 255],
+        fontSize: 12,
+      },
+      bodyStyles: {
+        fontSize: 10,
+      },
+      columnStyles: {
+        0: { cellWidth: 10 }, // STT
+        1: { cellWidth: 40 }, // Họ và tên
+        2: { cellWidth: 50 }, // Chuyên khoa
+        3: { cellWidth: 50 }, // Email
+        4: { cellWidth: 30 }, // Số điện thoại
+        5: { cellWidth: 30 }, // Giá khám
+        6: { cellWidth: 30 }, // Trạng thái
+      },
+    });
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    doc.setFontSize(10);
+    doc.text(`Trang ${pageCount}`, 180, 290); // Góc dưới cùng bên phải
+
+    // Xuất file PDF
+    doc.save("DanhSachBacSi.pdf");
+  };
   return (
     <Space
       direction="vertical"
       size="middle"
       style={{
         minWidth: "100%",
+        backgroundColor: "#fff",
+        padding: "20px",
+        borderRadius: "10px",
       }}
     >
       <h2 style={{ textTransform: "uppercase" }}>Danh sách bác sĩ</h2>
@@ -395,7 +499,11 @@ const DoctorList = () => {
             suffix={<SearchOutlined />}
             style={{
               width: 300,
+              backgroundColor: "#D9D9D9",
+              border: "none",
             }}
+            value={search}
+            onChange={handleSearch}
           />
           <Select
             defaultValue="Tất cả"
@@ -427,6 +535,12 @@ const DoctorList = () => {
             }}
           >
             Làm mới
+          </Button>
+          <Button type="primary" onClick={() => exportToExcel(doctorList)}>
+            Xuất Excel
+          </Button>
+          <Button type="primary" onClick={() => exportToPDF(doctorList)}>
+            Xuất PDF
           </Button>
         </Space>
 

@@ -5,10 +5,10 @@ import ManagerSider from "../components/sidebar/hospitalManager/ManagerSider";
 import ManagerContent from "../components/sidebar/hospitalManager/ManagerContent.jsx";
 const ManagerLayout = () => {
   return (
-    <Layout>
-      <ManagerHeader />
-      <Layout>
-        <ManagerSider />
+    <Layout hasSider>
+      <ManagerSider />
+      <Layout style={{ minHeight: "100vh", marginInlineStart: 200 }}>
+        <ManagerHeader />
         <ManagerContent />
       </Layout>
     </Layout>

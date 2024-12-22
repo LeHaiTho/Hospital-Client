@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import SpecialtyForm from "../../features/hospital/components/SpecialtyForm";
-import { Table, Space, Tooltip, Button, Card, Row, Col } from "antd";
+import { Table, Space, Tooltip, Button, Card, Row, Col, Input } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axiosConfig from "../../apis/axiosConfig";
 import { truncateDescription } from "../../utils/common";
+import { LiaEditSolid } from "react-icons/lia";
+import { FiSearch } from "react-icons/fi";
 import "./style.css";
+import { RiDeleteBin5Line } from "react-icons/ri";
 
 const SpecialtyInfo = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -76,7 +79,7 @@ const SpecialtyInfo = () => {
           >
             {record.name}
           </p>
-          <p style={{ fontStyle: "italic", color: "#797979" }}>
+          <p style={{ fontStyle: "italic" }}>
             {truncateDescription(record.description, 100)}
           </p>
           <span style={{ fontSize: "12px", color: "#797979" }}>
@@ -89,6 +92,7 @@ const SpecialtyInfo = () => {
       title: "Phí khám",
       dataIndex: "consultation_fee",
       key: "consultation_fee",
+      align: "center",
 
       render: (text, record) => (
         <p style={{ fontStyle: "italic", color: "#0165ff", fontWeight: "500" }}>
@@ -104,10 +108,10 @@ const SpecialtyInfo = () => {
       align: "center",
       width: "10%",
       render: (text, record) => (
-        <Space>
+        <div>
           <Tooltip placement="bottom" title="Chỉnh sửa">
             <Button
-              icon={<EditOutlined />}
+              icon={<LiaEditSolid size={24} color="#000" />}
               onClick={() => handleEdit(record.id)}
               type="text"
             />
@@ -115,18 +119,26 @@ const SpecialtyInfo = () => {
 
           <Tooltip placement="bottom" title="Xóa">
             <Button
-              icon={<DeleteOutlined />}
+              icon={<RiDeleteBin5Line size={22} color="#ff0000" />}
               onClick={() => handleDelete(record.id)}
               type="text"
-              danger
             />
           </Tooltip>
-        </Space>
+        </div>
       ),
     },
   ];
   return (
-    <div style={{ display: "flex", flexDirection: "row", gap: "20px" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        gap: "20px",
+        backgroundColor: "#fff",
+        padding: "20px",
+        borderRadius: "10px",
+      }}
+    >
       <div
         style={{
           backgroundColor: "#fff",
@@ -143,9 +155,22 @@ const SpecialtyInfo = () => {
           width: "100%",
         }}
       >
+        <h1 style={{ fontSize: "24px", fontWeight: "500" }}>
+          Danh sách dịch vụ
+        </h1>
+        <Input
+          placeholder="Tìm kiếm"
+          style={{
+            width: "20%",
+            marginBottom: "10px",
+            backgroundColor: "#D9D9D9",
+          }}
+          prefix={<FiSearch />}
+        />
         <Table
           columns={columns}
           size="small"
+          pagination={false}
           dataSource={specialties.map((specialty) => ({
             ...specialty,
             key: specialty.id,

@@ -9,6 +9,7 @@ import ScheduleDoctor from "../../../../pages/hospitalManager/ScheduleDoctor";
 import SpecialtyList from "../../../../pages/hospitalManager/SpecialtyList";
 import WorkingSchedule from "../../../../pages/hospitalManager/WorkingSchedule";
 import TimeOffList from "../../../../pages/hospitalManager/TimeOffList";
+import Dashboard from "../../../../pages/hospitalManager/Dashboard";
 const { Content } = Layout;
 
 const ManagerContent = () => {
@@ -20,8 +21,9 @@ const ManagerContent = () => {
       style={{
         minHeight: 280,
         padding: 16,
-        backgroundColor: "#fff",
-        margin: "16px",
+        backgroundColor: "#EAEDF7",
+        overflow: "initial",
+        // margin: "16px",
       }}
     >
       <Routes>
@@ -33,6 +35,7 @@ const ManagerContent = () => {
         <Route path="/specialty-list" element={<SpecialtyList />} />
         <Route path="/working-schedule" element={<WorkingSchedule />} />
         <Route path="/time-off-list" element={<TimeOffList />} />
+        <Route path="/" element={<Dashboard />} />
       </Routes>
     </Content>
   );

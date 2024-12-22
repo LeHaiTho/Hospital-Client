@@ -33,11 +33,17 @@ const ManagerSider = () => {
       label: "Cơ sở của tôi",
       icon: <RiHospitalLine size={15} />,
     },
+    {
+      key: "hospitals",
+      label: "Cơ sở của tôi",
+      icon: <RiHospitalLine size={15} />,
+    },
     // Các mục menu khác tùy theo manager
   ];
 
   const {
     token: { colorBgContainer },
+    shadows,
   } = theme.useToken();
 
   return (
@@ -46,6 +52,15 @@ const ManagerSider = () => {
       style={{
         background: colorBgContainer,
         minHeight: "100vh",
+        overflow: "auto",
+        height: "100vh",
+        position: "fixed",
+        insetInlineStart: 0,
+        top: 0,
+        bottom: 0,
+        scrollbarWidth: "thin",
+        scrollbarGutter: "stable",
+        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
       }}
     >
       <Menu
@@ -54,8 +69,9 @@ const ManagerSider = () => {
         className="menu-bar"
         mode="inline"
         style={{
-          height: "100%",
+          // height: "100%",
           borderRight: 0,
+          // boxShadow: shadows.card,
         }}
         items={items}
         selectedKeys={[location.pathname.substring(1)]}

@@ -4,6 +4,8 @@ import { DeleteOutlined } from "@ant-design/icons";
 import axiosInstance from "../../apis/axiosConfig";
 import "./style.css";
 
+import { RiDeleteBinLine } from "react-icons/ri";
+
 const { Search } = Input;
 const { Meta } = Card;
 
@@ -11,7 +13,7 @@ const SpecialtyList = () => {
   const [selectedSpecialties, setSelectedSpecialties] = useState([]);
   const [specialtiesData, setSpecialtiesData] = useState([]);
   const [tempSelectedSpecialties, setTempSelectedSpecialties] = useState([]);
-
+  console.log(selectedSpecialties);
   // fecth specialties of system
   const fecthSpecialties = async () => {
     const res = await axiosInstance.get("/specialties/list");
@@ -66,6 +68,18 @@ const SpecialtyList = () => {
       width: "10%",
       render: (text, record, index) => index + 1,
     },
+
+    {
+      title: "Ảnh chuyên khoa",
+      dataIndex: "image",
+      align: "center",
+      render: (text, record) => (
+        <img
+          src={`http://localhost:3000/uploads/1728487544700.png`}
+          style={{ width: 50, height: 50 }}
+        />
+      ),
+    },
     {
       title: "Chuyên khoa",
       dataIndex: "name",
@@ -80,7 +94,7 @@ const SpecialtyList = () => {
       render: (text, record) => (
         <Button
           type="text"
-          icon={<DeleteOutlined style={{ color: "red" }} />}
+          icon={<RiDeleteBinLine style={{ color: "#FE4225" }} size={20} />}
           onClick={() => handleDelete(record.id)}
         />
       ),

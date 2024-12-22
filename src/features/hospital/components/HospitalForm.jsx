@@ -20,6 +20,8 @@ import axiosInstance from "../../../apis/axiosConfig";
 import axios from "axios";
 import dayjs from "dayjs";
 import "../../../index.css";
+import "../../../pages/hospitalManager/style.css";
+import { FaMagnifyingGlassLocation } from "react-icons/fa6";
 
 import moment from "moment";
 
@@ -191,7 +193,7 @@ const HospitalForm = () => {
   };
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {isLoading ? (
         <Spin />
       ) : (
@@ -199,40 +201,99 @@ const HospitalForm = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Tên bệnh viện"
+                label="Tên cơ sở y tế"
                 name="name"
                 rules={[
-                  { required: true, message: "Vui lòng nhập tên bệnh viện!" },
+                  { required: true, message: "Vui lòng nhập tên cơ sở y tế!" },
                 ]}
               >
-                <Input placeholder="Tên bệnh viện" />
+                <Input placeholder="Tên cơ sở y tế" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[{ required: true, message: "Vui lòng nhập email!" }]}
-              >
-                <Input placeholder="Email" type="email" />
-              </Form.Item>
+            <Col style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
+              <Col span={12}>
+                <Form.Item
+                  label="Ảnh đại diện"
+                  name="avatar"
+                  rules={[
+                    {
+                      required: !initialValues?.avatar,
+                      message: "Vui lòng tải ảnh đại diện!",
+                    },
+                  ]}
+                >
+                  <Upload
+                    listType="text"
+                    maxCount={1}
+                    beforeUpload={() => false}
+                    onChange={onChangeAvatar}
+                    fileList={avatar}
+                    accept=".jpg, .jpeg, .png"
+                  >
+                    <Button icon={<UploadOutlined />}>Tải ảnh</Button>
+                  </Upload>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="Ảnh bìa"
+                  name="banner"
+                  rules={[
+                    {
+                      required: !initialValues?.banner,
+                      message: "Vui lòng tải ảnh bìa!",
+                    },
+                  ]}
+                >
+                  <Upload
+                    listType="text"
+                    maxCount={1}
+                    beforeUpload={() => false}
+                    onChange={onChangeBanner}
+                    fileList={banner}
+                    accept=".jpg, .jpeg, .png"
+                  >
+                    <Button icon={<UploadOutlined />}>Tải ảnh</Button>
+                  </Upload>
+                </Form.Item>
+              </Col>
             </Col>
           </Row>
-          <Row gutter={20} style={{ alignItems: "center" }}>
-            <Col span={18}>
-              <Form.Item
-                label="Địa chỉ"
-                name="address"
-                rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
-              >
-                <Input placeholder="Địa chỉ" />
-              </Form.Item>
-            </Col>
 
-            <Col span={6}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              gap: "10px",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <Form.Item
+              label="Địa chỉ"
+              name="address"
+              rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
+              style={{ width: "70%" }}
+            >
+              <Input placeholder="Địa chỉ" />
+            </Form.Item>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                gap: "10px",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#0165fc",
+                padding: 5,
+                borderRadius: "5px",
+              }}
+            >
+              <FaMagnifyingGlassLocation size={20} color="#fff" />
               <Typography.Link
                 style={{
-                  color: "#165dff",
+                  color: "#fff",
                   fontStyle: "italic",
                   cursor: "pointer",
                 }}
@@ -240,57 +301,18 @@ const HospitalForm = () => {
               >
                 Lấy vị trí hiện tại
               </Typography.Link>
-            </Col>
-          </Row>
+            </div>
+          </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
+          {/* <Col span={8}>
               <Form.Item
-                label="Ảnh đại diện"
-                name="avatar"
-                rules={[
-                  {
-                    required: !initialValues?.avatar,
-                    message: "Vui lòng tải ảnh đại diện!",
-                  },
-                ]}
+                label="Email"
+                name="email"
+                rules={[{ required: true, message: "Vui lòng nhập email!" }]}
               >
-                <Upload
-                  listType="picture"
-                  maxCount={1}
-                  beforeUpload={() => false}
-                  onChange={onChangeAvatar}
-                  fileList={avatar}
-                  accept=".jpg, .jpeg, .png"
-                >
-                  <Button icon={<UploadOutlined />}>Tải ảnh</Button>
-                </Upload>
+                <Input placeholder="Email" type="email" />
               </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Ảnh bìa"
-                name="banner"
-                rules={[
-                  {
-                    required: !initialValues?.banner,
-                    message: "Vui lòng tải ảnh bìa!",
-                  },
-                ]}
-              >
-                <Upload
-                  listType="picture"
-                  maxCount={1}
-                  beforeUpload={() => false}
-                  onChange={onChangeBanner}
-                  fileList={banner}
-                  accept=".jpg, .jpeg, .png"
-                >
-                  <Button icon={<UploadOutlined />}>Tải ảnh</Button>
-                </Upload>
-              </Form.Item>
-            </Col>
-          </Row>
+            </Col> */}
 
           <Form.Item
             label="Mô tả"
@@ -318,6 +340,7 @@ const HospitalForm = () => {
                   "undo",
                   "redo",
                 ],
+                maxHeight: 100,
               }}
             />
           </Form.Item>
@@ -329,7 +352,7 @@ const HospitalForm = () => {
           </Form.Item>
         </Form>
       )}
-    </>
+    </div>
   );
 };
 

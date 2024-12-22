@@ -281,7 +281,7 @@ const ScheduleDoctor = () => {
         color: event.isSelected ? "#0165ff" : "#000",
         borderRadius: "4px",
         padding: "4px",
-        borderWidth: "2px",
+        // borderWidth: "2px",
         borderStyle: "solid",
         borderColor: "#0165ff",
         fontWeight: event.isSelected ? "bold" : "400",
@@ -340,7 +340,9 @@ const ScheduleDoctor = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-
+        backgroundColor: "#fff",
+        padding: "20px",
+        borderRadius: "10px",
         gap: 10,
       }}
     >
@@ -348,7 +350,19 @@ const ScheduleDoctor = () => {
         Lịch làm việc
       </h2>
       <div style={{ display: "flex", flexDirection: "row", gap: 20 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            backgroundColor: "#fff",
+            borderWidth: 1,
+            borderColor: "#797979",
+            borderStyle: "solid",
+            padding: "20px",
+            borderRadius: "10px",
+          }}
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <label
               style={{
@@ -356,15 +370,17 @@ const ScheduleDoctor = () => {
                 flexDirection: "row",
                 gap: 5,
                 fontWeight: "500",
+                color: "#000",
               }}
             >
               Bác sĩ
               <PiWarningCircleLight style={{ color: "red" }} />
             </label>
             <Select
-              style={{ borderWidth: 1 }}
+              style={{ borderWidth: 1, borderColor: "#fff" }}
               value={selectedDoctor}
               onChange={(value) => setSelectedDoctor(value)}
+              size="large"
             >
               {doctorList?.map((doctor) => (
                 <Option value={doctor?.id} key={doctor?.id}>
@@ -380,6 +396,7 @@ const ScheduleDoctor = () => {
                 flexDirection: "row",
                 gap: 5,
                 fontWeight: "500",
+                color: "#000",
               }}
             >
               Thời gian xếp lịch
@@ -389,6 +406,9 @@ const ScheduleDoctor = () => {
               format="DD-MM-YYYY"
               onChange={handleRangeChange}
               placeholder={["Ngày bắt đầu", "Ngày kết thúc"]}
+              style={{ borderWidth: 1 }}
+              disabled={!selectedDoctor}
+              size="large"
             />
           </div>
 
@@ -399,6 +419,7 @@ const ScheduleDoctor = () => {
                 flexDirection: "row",
                 gap: 5,
                 fontWeight: "500",
+                color: "#000",
               }}
             >
               Thời gian cuộc hẹn khám
@@ -406,9 +427,12 @@ const ScheduleDoctor = () => {
             </label>
 
             <Select
-              style={{ borderWidth: 1 }}
+              style={{ borderWidth: 1, borderColor: "#fff" }}
               value={selectedTimeSlot}
               onChange={(value) => setSelectedTimeSlot(value)}
+              size="large"
+              disabled={!selectedDoctor || !dateTimeRange?.length}
+              placeholder="Chọn thời gian cuộc hẹn khám"
             >
               <Option value={30}>30 phút </Option>
               <Option value={45}>45 phút</Option>
@@ -419,6 +443,9 @@ const ScheduleDoctor = () => {
             type="primary"
             style={{ display: "flex", width: "100%" }}
             onClick={handleSaveSchedule}
+            disabled={
+              !selectedDoctor || !dateTimeRange?.length || !selectedTimeSlot
+            }
           >
             Lưu lịch
           </Button>

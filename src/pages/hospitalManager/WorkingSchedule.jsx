@@ -1,328 +1,9 @@
-// import React from "react";
-// import { Card, Button, Col, Row, Table, TimePicker, Collapse } from "antd";
-// import { Checkbox } from "antd";
-// import { useState } from "react";
-// import moment from "moment";
-// import dayjs from "dayjs";
-// import axiosConfig from "../../apis/axiosConfig";
-// const { Panel } = Collapse;
-
-// const WorkingSchedule = () => {
-//   const [schedules, setSchedules] = useState({
-//     Monday: [],
-//     Tuesday: [],
-//     Wednesday: [],
-//     Thursday: [],
-//     Friday: [],
-//     Saturday: [],
-//     Sunday: [],
-//   });
-
-//   const [copiedSchedules, setCopiedSchedules] = useState([]);
-
-//   const handleAddTimeSlot = (day) => {
-//     setSchedules((prev) => ({
-//       ...prev,
-//       [day]:
-//         prev[day].length < 3
-//           ? [...prev[day], { start: null, end: null }]
-//           : prev[day],
-//     }));
-//   };
-
-//   const handleTimeChange = (day, index, time, type) => {
-//     // duyệt qua các ca để tìm ca đang chỉnh sửa
-//     const newSchedules = schedules[day].map((slot, i) =>
-//       i === index ? { ...slot, [type]: time } : slot
-//     );
-//     setSchedules({ ...schedules, [day]: newSchedules });
-//   };
-
-//   const handleDeleteTimeSlot = (day, index) => {
-//     const newSchedules = schedules[day].filter((_, i) => i !== index);
-//     setSchedules((prev) => ({
-//       ...prev,
-//       [day]: newSchedules,
-//     }));
-//   };
-
-//   // Chức năng copy ca làm việc đầu tiên của một ngày
-//   const handleCopy = (day) => {
-//     if (schedules[day].length > 0) {
-//       setCopiedSchedules(schedules[day]); // Sao chép toàn bộ ca làm việc của ngày đó
-//       console.log(`Đã copy lịch của ${day}`);
-//     }
-//   };
-
-//   // Chức năng paste ca làm việc đã được copy vào một ngày khác
-//   const handlePaste = (day) => {
-//     if (copiedSchedules.length > 0) {
-//       setSchedules((prev) => ({
-//         ...prev,
-//         [day]: [...copiedSchedules], // Paste ca làm việc vào ngày hiện tại
-//       }));
-//       console.log(`Đã paste lịch vào ${day}`);
-//     }
-//   };
-
-//   const handleSaveSchedule = async () => {
-//     const working_day = { ...schedules };
-//     console.log(working_day);
-//     const res = await axiosConfig.post(
-//       "/working-days/create-working-day-for-hospital",
-//       { working_day }
-//     );
-//     console.log(res);
-//   };
-//   return (
-//     <div>
-//       <h3>Chuyên khoa</h3>
-//       <Row gutter={20}>
-//         <Col span={16}>
-//           <Card style={{ borderRadius: 0 }}>
-//             {Object.keys(schedules).map((day) => (
-//               <Collapse key={day}>
-//                 <Panel header={day} key={day}>
-//                   <Button onClick={() => handleCopy(day)}>Copy</Button>
-//                   <Button onClick={() => handlePaste(day)}>Paste</Button>
-//                   {schedules[day].map((slot, index) => (
-//                     <div
-//                       key={index}
-//                       style={{
-//                         display: "flex",
-//                         gap: 10,
-//                       }}
-//                     >
-//                       {index === 0 && <p>Ca sáng:</p>}
-//                       {index === 1 && <p>Ca chiều:</p>}
-//                       {index === 2 && <p>Ca tối:</p>}
-//                       <div
-//                         style={{
-//                           display: "flex",
-//                           gap: 10,
-//                           flexDirection: "row",
-//                           alignItems: "center",
-//                         }}
-//                       >
-//                         <TimePicker
-//                           value={slot.start ? dayjs(slot.start, "HH:mm") : null}
-//                           format="HH:mm"
-//                           placeholder="Chọn thời gian"
-//                           onChange={(time) =>
-//                             handleTimeChange(day, index, time, "start")
-//                           }
-//                         />
-//                         <span>đến</span>
-//                         <TimePicker
-//                           value={slot.end ? dayjs(slot.end, "HH:mm") : null}
-//                           format="HH:mm"
-//                           placeholder="Chọn thời gian"
-//                           onChange={(time) =>
-//                             handleTimeChange(day, index, time, "end")
-//                           }
-//                         />
-//                       </div>
-//                       <Button onClick={() => handleDeleteTimeSlot(day, index)}>
-//                         Xóa
-//                       </Button>
-//                     </div>
-//                   ))}
-//                   <Button onClick={() => handleAddTimeSlot(day)}>
-//                     Thêm ca
-//                   </Button>
-//                 </Panel>
-//               </Collapse>
-//             ))}
-//             <Button onClick={handleSaveSchedule}>Lưu</Button>
-//           </Card>
-//         </Col>
-//         <Col span={8}>
-//           <Card
-//             className="scroll-container"
-//             style={{
-//               maxHeight: "100vh",
-//               minHeight: "100%",
-//               borderRadius: 0,
-//               boxShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
-//             }}
-//           >
-//             <div
-//               style={{
-//                 display: "flex",
-//                 flexDirection: "column",
-//                 justifyContent: "space-between",
-//                 gap: 20,
-//                 alignItems: "center",
-//               }}
-//             >
-//               <h3>Thời gian làm việc</h3>
-//               Lich
-//             </div>
-//           </Card>
-//         </Col>
-//       </Row>
-//     </div>
-//   );
-// };
-
-// export default WorkingSchedule;
-
-// import React, { useState } from "react";
-// import { Calendar, Views, momentLocalizer } from "react-big-calendar";
-// import moment from "moment";
-// import "react-big-calendar/lib/css/react-big-calendar.css";
-// import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop"; // Correct path for DnD
-// import "react-big-calendar/lib/addons/dragAndDrop/styles.css"; // DnD styles
-// import { Modal, Button } from "antd"; // Import Modal và Button từ Ant Design
-
-// const localizer = momentLocalizer(moment);
-// const DnDCalendar = withDragAndDrop(Calendar); // Wrap Calendar with drag-and-drop functionality
-
-// const WorkingSchedule = () => {
-//   const [events, setEvents] = useState([
-//     {
-//       id: 1,
-//       title: "Ca sáng",
-//       start: new Date(2024, 11, 4, 7, 0), // Ví dụ ngày giờ
-//       end: new Date(2024, 11, 4, 11, 0),
-//     },
-//     {
-//       id: 2,
-//       title: "Ca chiều",
-//       start: new Date(2024, 11, 5, 13, 0),
-//       end: new Date(2024, 11, 5, 17, 0),
-//     },
-//   ]);
-
-//   const [isModalVisible, setIsModalVisible] = useState(false);
-//   const [eventToDelete, setEventToDelete] = useState(null); // Sự kiện cần xóa
-
-//   // Xử lý sự kiện khi kéo thả
-//   const onEventDrop = ({ event, start, end, allDay }) => {
-//     const updatedEvents = events.map((existingEvent) =>
-//       existingEvent.id === event.id
-//         ? { ...existingEvent, start, end, allDay }
-//         : existingEvent
-//     );
-//     setEvents(updatedEvents);
-//   };
-
-//   // Xử lý resize sự kiện
-//   const onEventResize = ({ event, start, end }) => {
-//     const updatedEvents = events.map((existingEvent) =>
-//       existingEvent.id === event.id
-//         ? { ...existingEvent, start, end }
-//         : existingEvent
-//     );
-//     setEvents(updatedEvents);
-//   };
-
-//   // Xử lý khi tạo mới sự kiện bằng cách chọn vùng
-//   const handleSelectSlot = ({ start, end }) => {
-//     const newEvent = {
-//       id: Math.random(), // Tạo ID ngẫu nhiên
-//       title: "Sự kiện mới",
-//       start,
-//       end,
-//       isNew: true, // Đánh dấu sự kiện là mới tạo
-//     };
-//     setEvents((prevEvents) => [...prevEvents, newEvent]); // Thêm sự kiện mới
-//   };
-
-//   // Xử lý xóa sự kiện sau khi xác nhận
-//   const handleDeleteEvent = () => {
-//     if (eventToDelete) {
-//       const updatedEvents = events.filter(
-//         (event) => event.id !== eventToDelete.id
-//       );
-//       setEvents(updatedEvents);
-//       setEventToDelete(null); // Reset sự kiện cần xóa
-//       setIsModalVisible(false); // Đóng modal
-//     }
-//   };
-
-//   // Hiển thị Modal xác nhận khi nhấn nút "Xóa"
-//   const showDeleteConfirm = (event) => {
-//     setEventToDelete(event); // Lưu sự kiện cần xóa
-//     setIsModalVisible(true); // Mở modal xác nhận
-//   };
-
-//   // Tùy chỉnh kiểu sự kiện
-//   const eventPropGetter = (event) => {
-//     if (event.isNew) {
-//       return {
-//         style: {
-//           backgroundColor: "#ffcccc", // Màu nền cho sự kiện mới tạo
-//         },
-//       };
-//     }
-//     return {};
-//   };
-
-//   return (
-//     <div>
-//       <h2>Lịch hoạt động của bệnh viện</h2>
-//       <DnDCalendar
-//         localizer={localizer}
-//         events={events}
-//         defaultView={Views.WEEK}
-//         selectable
-//         resizable
-//         onEventDrop={onEventDrop} // Xử lý kéo thả
-//         onEventResize={onEventResize} // Xử lý thay đổi kích thước
-//         onSelectSlot={handleSelectSlot} // Tạo mới sự kiện khi chọn vùng
-//         eventPropGetter={eventPropGetter} // Tùy chỉnh kiểu sự kiện
-//         style={{ height: 500 }}
-//         step={30} // Thời gian trong 30 phút
-//         timeslots={2} // 2 timeslot = 1 giờ
-//       />
-
-//       {/* Hiển thị danh sách sự kiện với nút xóa */}
-//       <div>
-//         {events.map((event) =>
-//           event.isNew ? (
-//             <div key={event.id} style={{ position: "relative", marginTop: 10 }}>
-//               <span>{event.title}</span>
-//               <button
-//                 onClick={() => showDeleteConfirm(event)}
-//                 style={{
-//                   position: "absolute",
-//                   top: 5,
-//                   right: 5,
-//                   color: "red",
-//                   background: "transparent",
-//                   border: "none",
-//                   fontSize: "20px",
-//                   cursor: "pointer",
-//                 }}
-//               >
-//                 X
-//               </button>
-//             </div>
-//           ) : null
-//         )}
-//       </div>
-
-//       {/* Modal xác nhận xóa */}
-//       <Modal
-//         title="Xác nhận xóa"
-//         visible={isModalVisible}
-//         onOk={handleDeleteEvent} // Xóa sự kiện khi nhấn "OK"
-//         onCancel={() => setIsModalVisible(false)} // Đóng modal khi nhấn "Cancel"
-//         okText="Xóa"
-//         cancelText="Hủy"
-//       >
-//         <p>Bạn có chắc chắn muốn xóa sự kiện này không?</p>
-//       </Modal>
-//     </div>
-//   );
-// };
-
-// export default WorkingSchedule;
-
+import { FaEdit } from "react-icons/fa";
+import { RiDeleteBinLine } from "react-icons/ri";
 import React, { useState, useEffect } from "react";
 import { Calendar, Views, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
+
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop"; // Correct path for DnD
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css"; // DnD styles
@@ -333,6 +14,15 @@ import axiosConfig from "../../apis/axiosConfig";
 
 const localizer = momentLocalizer(moment);
 const DnDCalendar = withDragAndDrop(Calendar); // Wrap Calendar with drag-and-drop functionality
+import "moment/locale/vi"; // Import Vietnamese locale for moment
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { AiFillFileExcel } from "react-icons/ai";
+import { FileExcelOutlined, FilePdfOutlined } from "@ant-design/icons";
+
+moment.locale("vi");
 // Dữ liệu mẫu
 // const sampleData = {
 //   Monday: [
@@ -348,7 +38,7 @@ const WorkingSchedule = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null); // Event to delete
   const [hospitalSchedule, setHospitalSchedule] = useState([]);
-
+  const [openModal, setOpenModal] = useState(false);
   // useEffect(() => {
   //   const currentWeekStart = dayjs().startOf("week"); // Ngày đầu tuần (Chủ Nhật)
 
@@ -673,6 +363,91 @@ const WorkingSchedule = () => {
     };
   };
 
+  // Hàm xuất Excel
+  const exportToExcel = () => {
+    // Chuyển đổi dữ liệu sang định dạng Excel
+    const data = events.map((event) => ({
+      Ngày: moment(event.start).format("dddd"),
+      "Giờ bắt đầu": moment(event.start).format("HH:mm"),
+      "Giờ kết thúc": moment(event.end).format("HH:mm"),
+    }));
+
+    // Tạo worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Thời gian hoạt động");
+
+    // Xuất file
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+
+    // Lưu file
+    const file = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(file, "ThoiGianHoatDong.xlsx");
+  };
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+
+    // Thêm font hỗ trợ tiếng Việt (tùy chọn, có thể cần thêm font hỗ trợ nếu sử dụng các ký tự đặc biệt)
+    doc.setFont("helvetica", "normal");
+
+    // Tiêu đề PDF
+    doc.setFontSize(18);
+    doc.text("REPORT ", 14, 20);
+    doc.setFontSize(12);
+    doc.text(`export date: ${moment().format("DD/MM/YYYY")}`, 14, 30);
+
+    // Dữ liệu bảng
+    const tableData = events.map((event) => [
+      moment(event.start).locale("vi").format("dddd, DD/MM/YYYY"), // Sử dụng locale "vi" cho tiếng Việt
+      moment(event.start).format("HH:mm"),
+      moment(event.end).format("HH:mm"),
+    ]);
+
+    // Cấu hình bảng
+    doc.autoTable({
+      // head: [["Day", "start", "end"]],
+      body: tableData,
+      startY: 40,
+      theme: "grid",
+      headStyles: {
+        fillColor: [0, 123, 255], // Xanh dương nhạt
+        textColor: [255, 255, 255], // Màu trắng
+        fontSize: 12,
+      },
+      bodyStyles: {
+        fontSize: 11,
+      },
+      columnStyles: {
+        0: { cellWidth: 70 }, // Cột "Ngày"
+        1: { cellWidth: 40 }, // Cột "Giờ bắt đầu"
+        2: { cellWidth: 40 }, // Cột "Giờ kết thúc"
+      },
+      didDrawPage: function (data) {
+        // Footer PDF
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(10);
+        doc.text(`Trang ${pageCount}`, 180, 290); // Hiển thị số trang ở góc dưới cùng bên phải
+      },
+    });
+
+    // Lưu file PDF
+    doc.save("ThoiGianHoatDong.pdf");
+  };
+  // Define a custom header component
+  const CustomHeader = ({ label }) => (
+    <div
+      style={{
+        backgroundColor: "blue",
+        padding: "10px",
+        textAlign: "center",
+      }}
+    >
+      {label}
+    </div>
+  );
   return (
     <div
       style={{
@@ -680,6 +455,9 @@ const WorkingSchedule = () => {
         display: "flex",
         flexDirection: "column",
         paddingRight: 10,
+        backgroundColor: "#fff",
+        padding: "20px",
+        borderRadius: "10px",
       }}
     >
       <h2 style={{ textAlign: "center", textTransform: "uppercase" }}>
@@ -699,6 +477,8 @@ const WorkingSchedule = () => {
           defaultView={Views.WEEK}
           selectable
           resizable
+          // custom header calendar
+
           onEventDrop={onEventDrop} // Handle drag-and-drop
           onEventResize={onEventResize} // Handle resize
           onSelectSlot={handleSelectSlot} // Create event on slot select
@@ -722,8 +502,10 @@ const WorkingSchedule = () => {
             event: (props) => (
               <CustomEvent {...props} onDelete={showDeleteConfirm} />
             ),
+            toolbar: CustomHeader,
           }}
         />
+
         <div
           style={{
             display: "flex",
@@ -731,11 +513,44 @@ const WorkingSchedule = () => {
             flex: 1,
           }}
         >
-          <Button type="primary" onClick={handleSaveSchedule}>
+          <Button
+            icon={<AiFillFileExcel size={20} color="green" />}
+            type="primary"
+            onClick={exportToExcel}
+          >
+            Xuất Excel
+          </Button>
+          <Button type="" onClick={exportToPDF}>
+            Xuất PDF
+          </Button>
+          <Button type="text" onClick={() => setOpenModal(true)}>
+            Lưu lịch
+          </Button>
+          <Button type="text" onClick={handleSaveSchedule}>
             Lưu lịch
           </Button>
         </div>
       </div>
+      <Modal
+        title="Thời gian hoạt động"
+        open={openModal}
+        onCancel={() => setOpenModal(false)}
+      >
+        <Table dataSource={events} columns={columns} size="small" />
+        {/* button save file PDF, EXCEL */}
+        <div style={{ marginTop: 16, textAlign: "right" }}>
+          <Button
+            type="primary"
+            icon={<FileExcelOutlined />}
+            style={{ marginRight: 8 }}
+          >
+            Save as Excel
+          </Button>
+          <Button type="primary" icon={<FilePdfOutlined />}>
+            Save as PDF
+          </Button>
+        </div>
+      </Modal>
 
       {/* Delete confirmation modal */}
       <Modal
@@ -755,34 +570,43 @@ const WorkingSchedule = () => {
 export default WorkingSchedule;
 
 // // Columns for the table to display event details
-// const columns = [
-//   {
-//     title: "Tiêu đề",
-//     dataIndex: "title",
-//     key: "title",
-//   },
-//   {
-//     title: "Giờ bắt đầu",
-//     dataIndex: "start",
-//     key: "start",
-//     render: (start) => moment(start).format("HH:mm DD/MM/YYYY"),
-//   },
-//   {
-//     title: "Giờ kết thúc",
-//     dataIndex: "end",
-//     key: "end",
-//     render: (end) => moment(end).format("HH:mm DD/MM/YYYY"),
-//   },
-//   {
-//     title: "Hành động",
-//     key: "action",
-//     render: (_, record) => (
-//       <Button
-//         onClick={() => showDeleteConfirm(record)}
-//         style={{ color: "red", border: "none" }}
-//       >
-//         Xóa
-//       </Button>
-//     ),
-//   },
-// ];
+const columns = [
+  {
+    title: "Ngày",
+    dataIndex: "start",
+    key: "start",
+    align: "center",
+    render: (start) => moment(start).format("dddd"),
+  },
+  {
+    title: "Giờ bắt đầu",
+    dataIndex: "start",
+    key: "start",
+    align: "center",
+    render: (start) => moment(start).format("HH:mm"),
+  },
+  {
+    title: "Giờ kết thúc",
+    dataIndex: "end",
+    key: "end",
+    align: "center",
+    render: (end) => moment(end).format("HH:mm"),
+  },
+  {
+    title: "Hành động",
+    key: "action",
+    render: (_, record) => (
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <FaEdit style={{ cursor: "pointer" }} size={18} color="#000" />
+        <RiDeleteBinLine style={{ cursor: "pointer" }} size={20} color="red" />
+      </div>
+    ),
+  },
+];
