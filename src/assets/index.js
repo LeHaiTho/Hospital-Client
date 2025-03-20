@@ -1,2 +1,4 @@
 import logo from "./logo.png";
-export { logo };
+import appLogo from "./app-logo.png";
+import apLogo from "./ap-logo.png";
+export { logo, appLogo, apLogo };

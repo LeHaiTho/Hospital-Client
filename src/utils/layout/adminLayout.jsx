@@ -6,10 +6,10 @@ import AppContent from "../components/AppContent";
 
 const AdminLayout = () => {
   return (
-    <Layout>
-      <AppHeader />
-      <Layout>
-        <AppSider />
+    <Layout hasSider>
+      <AppSider />
+      <Layout style={{ minHeight: "100vh", marginInlineStart: 200 }}>
+        <AppHeader />
         <AppContent />
       </Layout>
     </Layout>

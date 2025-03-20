@@ -49,7 +49,7 @@ const columns = (onEditClick) => [
     title: "Tên nhân viên",
     dataIndex: "fullname",
     key: "fullname",
-    render: (_, record) => record?.patient?.fullname,
+    render: (_, record) => record?.doctor.fullname,
   },
   {
     title: "Tiêu đề",
@@ -277,8 +277,8 @@ const TimeOffList = () => {
                     {option.value === "rejected"
                       ? "Hủy đơn"
                       : option.value === "approved"
-                      ? "Duyệt"
-                      : option.label}
+                        ? "Duyệt"
+                        : option.label}
                   </Radio>
                 ))}
             </Radio.Group>

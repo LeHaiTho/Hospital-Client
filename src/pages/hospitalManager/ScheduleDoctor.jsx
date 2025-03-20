@@ -60,12 +60,11 @@ const ScheduleDoctor = () => {
       console.log(error);
     }
   };
-
+  console.log(roomList);
   useEffect(() => {
     fetchDoctorList();
     fetchRoomList();
   }, []);
-  console.log(roomList);
 
   // convert data from backend to data for calendar
   const convertScheduleData = (data) => {
@@ -98,6 +97,7 @@ const ScheduleDoctor = () => {
           : event
       )
     );
+    console.log("sddddddddddddd", eventId);
   };
 
   const handleRoomChange = (eventId, newRoom) => {
@@ -106,6 +106,60 @@ const ScheduleDoctor = () => {
         event.id === eventId ? { ...event, room: newRoom } : event
       )
     );
+  };
+
+  // kiểm tra check lấy được gì
+  const handleCheck = async (event) => {
+    let shift;
+    if (event.title?.toLowerCase().includes("ca sáng")) {
+      shift = "morning"; // Trả về 'morning' nếu là ca sáng
+    }
+    // Kiểm tra nếu title chứa cụm từ "ca chiều"
+    else if (event.title?.toLowerCase().includes("ca chiều")) {
+      shift = "afternoon"; // Trả về 'afternoon' nếu là ca chiều
+    }
+    // Kiểm tra nếu title chứa cụm từ "ca tối"
+    else if (event.title?.toLowerCase().includes("ca tối")) {
+      shift = "evening"; // Trả về 'evening' nếu là ca tối
+    }
+    console.log(shift);
+
+    let dateNeedCheck = moment(event.start).format("dddd");
+    // Chuyển đổi ngày thành number index tương ứng (0 - Sunday, 1 - Monday, ...)
+    const dayOfWeekMapping = {
+      Sunday: 0,
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+    };
+
+    const numberDate = dayOfWeekMapping[dateNeedCheck]; // Lấy chỉ số ngày trong tuần
+    console.log("numberDate", numberDate);
+
+    const dayOfDate = filterByDayOfWeek(dateTimeRange, numberDate);
+    console.log("dayOfDate", dayOfDate);
+    try {
+      const response = await axiosConfig.post("/doctor-schedules/check", {
+        doctorId: selectedDoctor,
+        shift,
+        dayOfDate,
+        numberDate,
+      });
+      if (response.schedule.length > 0) {
+        notification.error({
+          message:
+            "Ca làm việc này đã được đăng ký cho bác sĩ! Vui lòng không chọn lại!",
+        });
+        handleCheckboxChange(event.id);
+      } else if (response.schedule.length === 0) {
+        return;
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleSlotsChange = (eventId, newSlots) => {
@@ -117,6 +171,7 @@ const ScheduleDoctor = () => {
   };
 
   console.log("events", events);
+  console.log("............................", roomList);
   // format data to send to backend
   const formatDataToSend = () => {
     const groupedDates = groupDatesByDayOfWeek(); // Nhóm các ngày theo thứ trong tuần
@@ -244,6 +299,7 @@ const ScheduleDoctor = () => {
           <Checkbox
             checked={event.isSelected}
             onChange={() => handleCheckboxChange(event.id)}
+            // onChange={() => handleCheck(event.id)}
             size="small"
             style={{
               marginBottom: "5px",
@@ -318,6 +374,14 @@ const ScheduleDoctor = () => {
     return groupedDates;
   };
 
+  function filterByDayOfWeek(dates, dayOfWeek) {
+    return dates.filter((date) => {
+      const day = new Date(date).getDay(); // getDay() trả về chỉ số ngày trong tuần (0 - Chủ nhật, 1 - Thứ 2, ... 6 - Thứ 7)
+      return day === dayOfWeek; // Kiểm tra nếu ngày là thứ Hai (1)
+    });
+  }
+
+  console.log(filterByDayOfWeek(dateTimeRange, 2));
   // {
   //   "date": "2024-12-12",
   //   "date_of_week": "Thursday",
@@ -333,7 +397,7 @@ const ScheduleDoctor = () => {
     const assignedSchedules = {};
   };
   console.log(groupDatesByDayOfWeek());
-  console.log(dateTimeRange);
+  // console.log(dateTimeRange);
 
   return (
     <div
@@ -379,7 +443,9 @@ const ScheduleDoctor = () => {
             <Select
               style={{ borderWidth: 1, borderColor: "#fff" }}
               value={selectedDoctor}
-              onChange={(value) => setSelectedDoctor(value)}
+              onChange={(value) => {
+                setSelectedDoctor(value);
+              }}
               size="large"
             >
               {doctorList?.map((doctor) => (
@@ -475,7 +541,7 @@ const ScheduleDoctor = () => {
             }}
             defaultViewDate={new Date()}
             onSelectEvent={(event) => {
-              console.log(event);
+              handleCheck(event);
             }}
             eventPropGetter={eventPropGetter}
             formats={{

@@ -20,7 +20,9 @@ const AppContent = () => {
       style={{
         minHeight: 280,
         padding: 16,
-        backgroundColor: "#fbfaff",
+        backgroundColor: "#EAEDF7",
+        overflow: "initial",
+        // margin: "16px",
       }}
     >
       <Routes>

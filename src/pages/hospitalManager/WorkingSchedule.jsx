@@ -513,7 +513,7 @@ const WorkingSchedule = () => {
             flex: 1,
           }}
         >
-          <Button
+          {/* <Button
             icon={<AiFillFileExcel size={20} color="green" />}
             type="primary"
             onClick={exportToExcel}
@@ -522,11 +522,11 @@ const WorkingSchedule = () => {
           </Button>
           <Button type="" onClick={exportToPDF}>
             Xuất PDF
-          </Button>
+          </Button> */}
           <Button type="text" onClick={() => setOpenModal(true)}>
-            Lưu lịch
+            Thông tin chi tiết
           </Button>
-          <Button type="text" onClick={handleSaveSchedule}>
+          <Button type="primary" onClick={handleSaveSchedule}>
             Lưu lịch
           </Button>
         </div>
@@ -543,10 +543,21 @@ const WorkingSchedule = () => {
             type="primary"
             icon={<FileExcelOutlined />}
             style={{ marginRight: 8 }}
+            onClick={() => {
+              setIsModalVisible(false);
+              exportToExcel();
+            }}
           >
             Save as Excel
           </Button>
-          <Button type="primary" icon={<FilePdfOutlined />}>
+          <Button
+            type="primary"
+            icon={<FilePdfOutlined />}
+            onClick={() => {
+              setIsModalVisible(false);
+              exportToPDF();
+            }}
+          >
             Save as PDF
           </Button>
         </div>

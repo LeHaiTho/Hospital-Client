@@ -70,9 +70,9 @@ const ExamResult = () => {
           ...formData,
           appointment: { id: res?.appointmentDetail?.id },
         });
-        if (res.status === 200) {
-          message.success("Check-in thành công");
-        }
+        // if (res.status === 200) {
+        //   message.success("Check-in thành công");
+        // }
       } catch (error) {
         console.log(error);
         if (error.response.status === 404) {
@@ -235,6 +235,7 @@ const ExamResult = () => {
           onUpdate={(err, result) => {
             if (result) {
               handleScan(result);
+              return;
             }
             // if (err) handleError(err);
           }}

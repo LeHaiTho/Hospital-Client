@@ -31,7 +31,7 @@ const ChangePasswordFirstLogin = () => {
       dispatch(login(response?.data));
       // Nếu đổi mật khẩu thành công
       setLoading(false);
-      navigate("/dashboard"); // Điều hướng về dashboard sau khi đổi mật khẩu thành công
+      navigate("/manager/hospitals-info"); // Điều hướng về dashboard sau khi đổi mật khẩu thành công
     } catch (error) {
       setLoading(false);
       console.log("error", error);
@@ -51,11 +51,7 @@ const ChangePasswordFirstLogin = () => {
   return (
     <div style={{ maxWidth: 400, margin: "50px auto" }}>
       <h2>Đổi Mật Khẩu Lần Đầu</h2>
-      <p>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Ut tenetur
-        dignissimos cupiditate quia dolorum quibusdam ratione amet autem in
-        natus!
-      </p>
+
       <Form
         layout="vertical"
         onFinish={onFinish}

@@ -8,18 +8,15 @@ const { Title } = Typography;
 
 const Logo = () => {
   return (
-    <div className="app-name">
-      <Avatar size={40} src={logo} shape="square" />
-      <span
-        level={4}
-        style={{
-          marginBottom: 0,
-          fontWeight: "bold",
-          fontFamily: "Helvetica",
-        }}
-      >
-        HOSPITAL
-      </span>
+    <div
+      className="app-name"
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <Avatar size={50} style={{}} src={logo} shape="square" />
     </div>
   );
 };

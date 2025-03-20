@@ -13,6 +13,7 @@ import {
   Select,
   Upload,
 } from "antd";
+import { FiSearch } from "react-icons/fi";
 import styled from "styled-components";
 import {
   PlusOutlined,
@@ -263,21 +264,27 @@ const SpecialtiesList = ({
     },
   ];
   return (
-    <Space direction="vertical" size={10}>
-      <Text strong italic>
-        Chuyên khoa
-      </Text>
+    <div style={{ backgroundColor: "#fff", padding: 16, borderRadius: 7 }}>
+      <h2 style={{ textAlign: "center" }}>DANH SÁCH CHUYÊN KHOA</h2>
       <div
         style={{
-          backgroundColor: "white",
-          boxShadow: "0 0 5px 0 rgba(0, 0, 0, 0.1)",
-          border: "1px solid #d9d9d9",
-          padding: 16,
-          borderRadius: 7,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "10px",
+          gap: 10,
         }}
       >
-        <Space direction="vertical" size={16}>
-          <Search placeholder="input search text" onSearch={() => {}} />
+        <Input
+          placeholder="Tìm kiếm"
+          style={{
+            width: "20%",
+            marginBottom: "10px",
+            backgroundColor: "#D9D9D9",
+          }}
+          prefix={<FiSearch />}
+        />
+        <div style={{ display: "flex", gap: "10px" }}>
           <Button
             type="primary"
             onClick={handleOpenModal}
@@ -285,16 +292,16 @@ const SpecialtiesList = ({
           >
             Thêm mới
           </Button>
-          <Table
-            columns={columns}
-            dataSource={specialties}
-            size="small"
-            rowKey="id"
-            loading={isLoading}
-          />
-        </Space>
+        </div>
       </div>
-    </Space>
+      <Table
+        columns={columns}
+        dataSource={specialties}
+        size="small"
+        rowKey="id"
+        loading={isLoading}
+      />
+    </div>
   );
 };
 
