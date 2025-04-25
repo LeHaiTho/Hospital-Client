@@ -75,7 +75,7 @@ const SpecialtyList = () => {
       align: "center",
       render: (text, record) => (
         <img
-          src={`http://localhost:3000/uploads/1728487544700.png`}
+          src={`http://localhost:3000${record.photo}`}
           style={{ width: 50, height: 50 }}
         />
       ),

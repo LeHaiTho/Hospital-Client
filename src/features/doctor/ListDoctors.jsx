@@ -1,167 +1,131 @@
-import React, { useRef, useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  UserOutlined,
   SearchOutlined,
-  PlusOutlined,
-  DownOutlined,
   EditOutlined,
-  DeleteOutlined,
-  ExclamationCircleFilled,
-  CustomerServiceOutlined,
-  RadiusUpleftOutlined,
-  RadiusUprightOutlined,
-  RadiusBottomleftOutlined,
-  RadiusBottomrightOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
-import NotificationComponent from "../../utils/NotificationComponent";
+import { GrRefresh } from "react-icons/gr";
 import {
   Input,
   Space,
   Button,
   Select,
   Table,
-  Divider,
   Tag,
   Dropdown,
   Modal,
-  Form,
-  Radio,
-  Upload,
-  DatePicker,
+  Typography,
+  Row,
+  Col,
   Avatar,
-  notification,
 } from "antd";
 import { IoIosMore } from "react-icons/io";
-import { UploadOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import { LiaUserNurseSolid } from "react-icons/lia";
-
-const { Search } = Input;
-const { confirm } = Modal;
-const { Option } = Select;
-const { TextArea } = Input;
+import { MdMarkEmailRead } from "react-icons/md";
+import "../../index.css";
+import axiosConfig from "../../apis/axiosConfig";
+import moment from "moment";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const handleChange = (value) => {
   console.log(`selected ${value}`);
 };
 
-const showDeleteConfirm = () => {
-  confirm({
-    title: "Bạn có chắc sẽ xóa tài khoản người dùng này?",
-    icon: <ExclamationCircleFilled />,
-    okText: "Chấp nhận",
-    okType: "primary",
-    cancelText: "Hủy",
-    onOk() {
-      console.log("OK");
-      NotificationComponent("success", "Xóa thành công", "bottomRight");
-    },
-    onCancel() {
-      console.log("Cancel");
-    },
-  });
-};
-const items = [
-  {
-    label: "Chỉnh sửa",
-    icon: <EditOutlined />,
-    key: "0",
-  },
-  {
-    label: "Xóa",
-    icon: <DeleteOutlined />,
-    danger: true,
-    key: "1",
-    onClick: showDeleteConfirm,
-  },
-];
-const data = [
-  {
-    key: "1",
-    fullname: "John ",
-    avatar: "",
-    email: "john.brown@gmail.com",
-    status: "Đang làm việc",
-    phone: "101010101001",
-    lastLogin: "2024-08-17 19:00:00",
-  },
-  {
-    key: "2",
-    avatar:
-      "data:image/jpeg;base64,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",
-    fullname: "John Brown",
-    email: "john.brown@gmail.com",
-    status: "Đang làm việc",
-    phone: "101010101001",
-  },
-  {
-    key: "3",
-    fullname: "John Brown",
-    email: "john.brown@gmail.com",
-    status: "Đang làm việc",
-    phone: "101010101001",
-    specialties: "Thần kinh",
-  },
-  {
-    key: "4",
-    fullname: "John Brown",
-    email: "john.brown@gmail.com",
-    status: "Đã nghỉ việc",
-    phone: "101010101001",
-  },
-];
-
 const ListDoctors = () => {
   const [visible, setVisible] = useState(false);
-  const [form] = Form.useForm();
+  const [doctorList, setDoctorList] = useState([]);
+  const [viewDoctor, setViewDoctor] = useState(null);
+  const [search, setSearch] = useState("");
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  const showModal = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Hàm lấy page từ URL query params
+  const getPageFromUrl = () => {
+    const params = new URLSearchParams(location.search);
+    return parseInt(params.get("page")) || 1;
+  };
+
+  // get doctor list
+  const getDoctorList = async (page = 1, pageSize = 10, searchQuery = "") => {
+    try {
+      const response = await axiosConfig.get("/doctors", {
+        params: {
+          page,
+          limit: pageSize,
+          search: searchQuery || undefined,
+        },
+      });
+      console.log(response);
+      setDoctorList(response.doctorList);
+      setPagination({
+        current: response.pagination.currentPage,
+        pageSize: response.pagination.limit,
+        total: response.pagination.totalItems,
+      });
+    } catch (error) {
+      console.error("Error fetching doctor list:", error);
+    }
+  };
+
+  // Đồng bộ page từ URL khi component mount
+  useEffect(() => {
+    const pageFromUrl = getPageFromUrl();
+    getDoctorList(pageFromUrl, pagination.pageSize, search);
+  }, [location.search]);
+
+  const handleSearch = (event) => {
+    const value = event.target.value;
+    setSearch(value);
+    // Reset về trang 1 và cập nhật URL
+    navigate(`/admin/doctor/list?page=1`);
+    getDoctorList(1, pagination.pageSize, value);
+  };
+
+  const handleTableChange = (pagination) => {
+    // Cập nhật URL với page mới
+    navigate(`/admin/doctor/list?page=${pagination.current}`);
+    getDoctorList(pagination.current, pagination.pageSize, search);
+  };
+
+  const showViewModal = (doctor) => {
     setVisible(true);
+    setViewDoctor(doctor);
+    setIsDescriptionExpanded(false); // Reset trạng thái mô tả khi mở modal
   };
 
   const handleCancel = () => {
-    form.resetFields();
     setVisible(false);
+    setViewDoctor(null);
+    setIsDescriptionExpanded(false); // Reset trạng thái mô tả khi đóng modal
   };
 
-  const handleOk = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        form.resetFields();
-        setVisible(false);
-        const formData = new FormData();
-        // Append các trường từ form
-        for (const key in values) {
-          formData.append(key, values[key]);
-        }
-        console.log(values);
-      })
-      .catch((info) => {
-        console.log("Validate Failed:", info);
-      });
+  const handleViewDoctor = (doctor) => {
+    showViewModal(doctor);
   };
 
-  const handleValueFromEvent = (e) => {
-    const value = Array.isArray(e) ? e : e && e.fileList;
-    return value;
-  };
-
-  const handleFinish = (values) => {
-    console.log("Form values:", values);
-  };
   const columns = [
     {
       title: "",
       dataIndex: "avatar",
       key: "avatar",
+      align: "center",
       render: (avatar) => (
         <Avatar
           size={40}
           src={
             avatar && avatar.trim() !== ""
-              ? avatar
-              : (avatar =
-                  "https://w7.pngwing.com/pngs/205/731/png-transparent-default-avatar-thumbnail.png")
+              ? `http://localhost:3000${avatar}`
+              : "https://w7.pngwing.com/pngs/205/731/png-transparent-default-avatar-thumbnail.png"
           }
         />
       ),
@@ -170,244 +134,417 @@ const ListDoctors = () => {
       title: "Họ và tên",
       dataIndex: "fullname",
       key: "fullname",
+      render: (fullname) => (
+        <p
+          style={{
+            color: "#000",
+            fontWeight: "500",
+            textTransform: "uppercase",
+          }}
+        >
+          {fullname}
+        </p>
+      ),
     },
     {
       title: "Chuyên khoa",
       dataIndex: "specialties",
       key: "specialties",
+      render: (specialties) => (
+        <p style={{ color: "#000" }}>
+          {specialties.map((item) => item.name).join(", ")}
+        </p>
+      ),
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      render: (email) => (
+        <p
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            fontSize: "14px",
+          }}
+        >
+          <MdMarkEmailRead size={18} color="#0165ff" /> {email}
+        </p>
+      ),
+    },
+    {
+      title: "Cơ sở y tế",
+      dataIndex: "hospital",
+      key: "hospital",
+      render: (hospital) => <p style={{ color: "#000" }}>{hospital.name}</p>,
+    },
+    {
+      title: "Giá khám",
+      dataIndex: "consultation_fee",
+      key: "consultation_fee",
+      render: (consultation_fee) => (
+        <p style={{ color: "#0165ff", fontWeight: "500" }}>
+          {consultation_fee[0] &&
+            `${Number(consultation_fee[0]).toLocaleString()} VNĐ`}
+        </p>
+      ),
     },
     {
       title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status) =>
-        status === "Đang làm việc" ? (
-          <Tag color="green">{status}</Tag>
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (isActive, isDeleted) =>
+        isActive === true ? (
+          <Tag color="success" bordered={false} icon={<CheckCircleOutlined />}>
+            Đang làm việc
+          </Tag>
         ) : (
-          <Tag color="default">{status}</Tag>
+          <Tag color="error" bordered={false} icon={<CloseCircleOutlined />}>
+            Tạm ngừng hoạt động
+          </Tag>
         ),
     },
-
-    // {
-    //   title: "Vai trò",
-    //   dataIndex: "role",
-    //   key: "role",
-    //   render: (role) => {
-    //     if (role === "Bác sĩ") {
-    //       return (
-    //         <Tag
-    //           color="blue"
-    //           style={{
-    //             display: "inline-flex",
-    //             justifyContent: "center",
-    //             alignItems: "center",
-    //             gap: 4,
-    //           }}
-    //         >
-    //           <LiaUserNurseSolid size={15} /> {role}
-    //         </Tag>
-    //       );
-    //     } else if (role === "Nhân viên") {
-    //       return (
-    //         <Tag icon={<CustomerServiceOutlined />} color="orange">
-    //           {role}
-    //         </Tag>
-    //       );
-    //     } else {
-    //       return (
-    //         <Tag icon={<UserOutlined />} color="purple">
-    //           {role}
-    //         </Tag>
-    //       );
-    //     }
-    //   },
-    // },
-
     {
       title: "",
       key: "action",
       dataIndex: "action",
-      render: () => (
-        <Dropdown menu={{ items }} trigger={["click"]}>
-          <Button
-            shape="circle"
-            icon={<IoIosMore size={20} />}
-            style={{
-              border: "none",
-              backgroundColor: "transparent",
-            }}
-          />
-        </Dropdown>
-      ),
+      render: (_, record) => {
+        const items = [
+          {
+            label: "Xem chi tiết",
+            icon: <EditOutlined />,
+            key: "0",
+            onClick: () => handleViewDoctor(record),
+          },
+        ];
+        return (
+          <Dropdown menu={{ items }} trigger={["click"]}>
+            <Button
+              type="text"
+              icon={<IoIosMore size={20} />}
+              style={{
+                border: "none",
+                backgroundColor: "transparent",
+              }}
+            />
+          </Dropdown>
+        );
+      },
     },
   ];
+
+  // const exportToExcel = (data) => {
+  //   const excelData = data.map((record) => ({
+  //     "Họ và tên": record.fullname,
+  //     "Chuyên khoa": record.specialties.map((item) => item.name).join(", "),
+  //     Email: record.email,
+  //     "Số điện thoại": record.phone,
+  //     "Giá khám": record.consultation_fee[0]
+  //       ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
+  //       : "",
+  //     "Trạng thái": record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
+  //   }));
+  //   const worksheet = XLSX.utils.json_to_sheet(excelData);
+  //   const workbook = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách bác sĩ");
+  //   XLSX.writeFile(workbook, "DanhSachBacSi.xlsx");
+  // };
+
+  // const exportToPDF = (data) => {
+  //   const doc = new jsPDF();
+  //   doc.setFontSize(18);
+  //   doc.text("DANH SÁCH BÁC SĨ", 14, 20);
+  //   doc.setFontSize(12);
+  //   doc.text(`Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`, 14, 30);
+  //   const tableData = data.map((record, index) => [
+  //     index + 1,
+  //     record.fullname,
+  //     record.specialties.map((item) => item.name).join(", "),
+  //     record.email,
+  //     record.phone,
+  //     record.consultation_fee[0]
+  //       ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
+  //       : "",
+  //     record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
+  //   ]);
+  //   doc.autoTable({
+  //     head: [
+  //       [
+  //         "STT",
+  //         "Họ và tên",
+  //         "Chuyên khoa",
+  //         "Email",
+  //         "Số điện thoại",
+  //         "Giá khám",
+  //         "Trạng thái",
+  //       ],
+  //     ],
+  //     body: tableData,
+  //     startY: 40,
+  //     theme: "grid",
+  //     headStyles: {
+  //       fillColor: [0, 123, 255],
+  //       textColor: [255, 255, 255],
+  //       fontSize: 12,
+  //     },
+  //     bodyStyles: {
+  //       fontSize: 10,
+  //     },
+  //     columnStyles: {
+  //       0: { cellWidth: 10 },
+  //       1: { cellWidth: 40 },
+  //       2: { cellWidth: 50 },
+  //       3: { cellWidth: 50 },
+  //       4: { cellWidth: 30 },
+  //       5: { cellWidth: 30 },
+  //       6: { cellWidth: 30 },
+  //     },
+  //   });
+  //   const pageCount = doc.internal.getNumberOfPages();
+  //   doc.setFontSize(10);
+  //   doc.text(`Trang ${pageCount}`, 180, 290);
+  //   doc.save("DanhSachBacSi.pdf");
+  // };
+
+  // Hàm xử lý hiển thị mô tả
+  const renderDescription = (description) => {
+    const maxLength = 100; // Giới hạn ký tự trước khi cắt
+    if (!description) return "Chưa cung cấp";
+    if (description.length <= maxLength || isDescriptionExpanded) {
+      return (
+        <>
+          {description}
+          {description.length > maxLength && (
+            <Button
+              type="link"
+              style={{ padding: 0, marginLeft: 8 }}
+              onClick={() => setIsDescriptionExpanded(false)}
+            >
+              Thu gọn
+            </Button>
+          )}
+        </>
+      );
+    }
+    return (
+      <>
+        {description.substring(0, maxLength)}...
+        <Button
+          type="link"
+          style={{ padding: 0, marginLeft: 8 }}
+          onClick={() => setIsDescriptionExpanded(true)}
+        >
+          Xem thêm
+        </Button>
+      </>
+    );
+  };
+
   return (
     <Space
       direction="vertical"
       size="middle"
       style={{
         minWidth: "100%",
+        backgroundColor: "#fff",
+        padding: "20px",
       }}
     >
-      <Space>
-        <Input
-          placeholder="Họ và tên, địa chỉ email, ... "
-          suffix={<SearchOutlined />}
-          style={{
-            width: 300,
-          }}
-        />
-        <Select
-          defaultValue="Tất cả"
-          style={{
-            width: 120,
-          }}
-          onChange={handleChange}
-          options={[
-            {
-              value: "all",
-              label: "Trạng thái",
-            },
-            {
-              value: "active",
-              label: "Hoạt động",
-            },
-            {
-              value: "lock",
-              label: "Tạm khóa",
-            },
-          ]}
-        />
+      <h2 style={{ textTransform: "uppercase" }}>Danh sách bác sĩ</h2>
+      <Space
+        direction="horizontal"
+        size="middle"
+        style={{ width: "100%", justifyContent: "space-between" }}
+      >
+        <Space size="middle">
+          <Input
+            placeholder="Họ và tên, địa chỉ email, ..."
+            suffix={<SearchOutlined />}
+            style={{
+              width: 300,
+              backgroundColor: "#D9D9D9",
+              border: "none",
+            }}
+            value={search}
+            onChange={handleSearch}
+          />
+          {/* <Select
+            defaultValue="Tất cả"
+            style={{
+              width: 120,
+            }}
+            onChange={handleChange}
+            options={[
+              {
+                value: "all",
+                label: "Trạng thái",
+              },
+              {
+                value: "active",
+                label: "Hoạt động",
+              },
+              {
+                value: "lock",
+                label: "Tạm khóa",
+              },
+            ]}
+          /> */}
+          <Button
+            icon={<GrRefresh />}
+            style={{
+              border: "none",
+              backgroundColor: "#DBEAFE",
+              color: "#0165ff",
+            }}
+            onClick={() => {
+              navigate(`/admin/doctor/list?page=1`);
+              getDoctorList(1, pagination.pageSize);
+              setSearch("");
+            }}
+          >
+            Làm mới
+          </Button>
+          {/* <Button type="primary" onClick={() => exportToExcel(doctorList)}>
+            Xuất Excel
+          </Button>
+          <Button type="primary" onClick={() => exportToPDF(doctorList)}>
+            Xuất PDF
+          </Button> */}
+        </Space>
       </Space>
-      {/* <div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
-          Thêm mới
-        </Button>
-      </div> */}
+
       <Modal
-        title="Thêm Tài Khoản Mới"
+        title="Chi tiết bác sĩ"
         open={visible}
-        onOk={handleOk}
         onCancel={handleCancel}
-        okText="Thêm"
-        cancelText="Hủy"
+        footer={[
+          <Button key="cancel" onClick={handleCancel}>
+            Đóng
+          </Button>,
+        ]}
         maskClosable={false}
         centered
         style={{
           margin: "5px auto",
         }}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          name="add_user_form"
-          onFinish={handleFinish}
-        >
-          <Form.Item
-            name="fullname"
-            label="Họ và tên"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng nhập họ và tên!",
-              },
-            ]}
-          >
-            <Input placeholder="Họ và tên" />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng nhập email!",
-                type: "email",
-              },
-            ]}
-          >
-            <Input placeholder="Email" />
-          </Form.Item>
-          <Form.Item
-            name="phone"
-            label="Số điện thoại"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng nhập số điện thoại!",
-              },
-              {
-                pattern: /^[0-9]{10,11}$/,
-                message: "Số điện thoại không hợp lệ!",
-              },
-            ]}
-          >
-            <Input placeholder="Số điện thoại" />
-          </Form.Item>
-          <Form.Item
-            name="birthdate"
-            label="Ngày sinh"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng chọn ngày sinh!",
-              },
-            ]}
-          >
-            <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
-          </Form.Item>
-          <Form.Item
-            name="address"
-            label="Địa chỉ chi tiết"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng nhập địa chỉ chi tiết!",
-              },
-            ]}
-          >
-            <TextArea rows={4} placeholder="Địa chỉ chi tiết" />
-          </Form.Item>
-          <Form.Item
-            name="role"
-            label="Vai trò"
-            rules={[
-              {
-                required: true,
-                message: "Vui lòng chọn vai trò!",
-              },
-            ]}
-          >
-            <Select placeholder="Chọn vai trò">
-              <Option value="doctor">Bác sĩ</Option>
-              <Option value="staff">Nhân viên</Option>
-              <Option value="customer">Khách hàng</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="avatar"
-            label="Ảnh đại diện"
-            valuePropName="fileList"
-            getValueFromEvent={handleValueFromEvent}
-          >
-            <Upload
-              name="avatar"
-              listType="picture"
-              accept="image/*"
-              maxCount={1}
-              beforeUpload={() => false}
-            >
-              <Button icon={<UploadOutlined />}>Tải ảnh</Button>
-            </Upload>
-          </Form.Item>
-        </Form>
+        {viewDoctor && (
+          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+            <div>
+              <Typography.Text strong>Mã chứng chỉ hành nghề</Typography.Text>
+              <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                {viewDoctor.licenseCode || "Chưa cung cấp"}
+              </Typography.Text>
+            </div>
+            <Row gutter={16}>
+              <Col span={12}>
+                <div>
+                  <Typography.Text strong>Tên bác sĩ</Typography.Text>
+                  <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                    {viewDoctor.fullname || "Chưa cung cấp"}
+                  </Typography.Text>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Typography.Text strong>Ảnh đại diện</Typography.Text>
+                  <div style={{ marginTop: 8 }}>
+                    {viewDoctor.avatar ? (
+                      <Avatar
+                        size={64}
+                        src={`http://localhost:3000${viewDoctor.avatar}`}
+                      />
+                    ) : (
+                      <Typography.Text>Chưa có ảnh</Typography.Text>
+                    )}
+                  </div>
+                </div>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <div>
+                  <Typography.Text strong>Số điện thoại</Typography.Text>
+                  <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                    {viewDoctor.phone || "Chưa cung cấp"}
+                  </Typography.Text>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Typography.Text strong>Email</Typography.Text>
+                  <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                    {viewDoctor.email || "Chưa cung cấp"}
+                  </Typography.Text>
+                </div>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <div>
+                  <Typography.Text strong>Ngày sinh</Typography.Text>
+                  <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                    {viewDoctor.birthday
+                      ? moment(viewDoctor.birthday).format("DD/MM/YYYY")
+                      : "Chưa cung cấp"}
+                  </Typography.Text>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Typography.Text strong>Giới tính</Typography.Text>
+                  <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                    {viewDoctor.gender ? "Nam" : "Nữ"}
+                  </Typography.Text>
+                </div>
+              </Col>
+            </Row>
+            <div>
+              <Typography.Text strong>Giá khám</Typography.Text>
+              <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                {viewDoctor.consultation_fee[0]
+                  ? `${Number(viewDoctor.consultation_fee[0]).toLocaleString()} VNĐ`
+                  : "Chưa cung cấp"}
+              </Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>Mô tả</Typography.Text>
+              <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                {renderDescription(viewDoctor.description)}
+              </Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>Chuyên khoa</Typography.Text>
+              <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                {viewDoctor.specialties?.map((item) => item.name).join(", ") ||
+                  "Chưa cung cấp"}
+              </Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>Bệnh viện</Typography.Text>
+              <Typography.Text style={{ display: "block", marginTop: 8 }}>
+                {viewDoctor.hospital?.name || "Chưa cung cấp"}
+              </Typography.Text>
+            </div>
+          </Space>
+        )}
       </Modal>
       <Table
-        style={{
-          minWidth: "100%",
-        }}
+        size="small"
         columns={columns}
-        dataSource={data}
+        dataSource={doctorList.map((doctor) => ({
+          ...doctor,
+          key: doctor.id,
+          specialties: doctor.specialties,
+        }))}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showSizeChanger: false,
+        }}
+        onChange={handleTableChange}
       />
     </Space>
   );

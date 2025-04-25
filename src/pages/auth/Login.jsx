@@ -30,7 +30,6 @@ const Login = () => {
     dispatch(clearError());
     try {
       const response = await axiosConfig.post("/auth/login", values);
-      console.log("response", response);
       if (response?.temporaryToken) {
         localStorage.setItem("temporaryToken", response?.temporaryToken);
         navigate("/change-password-first-login");
@@ -38,7 +37,6 @@ const Login = () => {
       } else {
         dispatch(setLoading(true));
         dispatch(login(response));
-        console.log("response", response);
         handleNavigation(response?.user?.role, navigate);
       }
     } catch (error) {

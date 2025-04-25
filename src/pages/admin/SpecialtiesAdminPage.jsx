@@ -6,11 +6,9 @@ import {
   Button,
   Table,
   Space,
-  Flex,
   Tooltip,
   Typography,
   message,
-  Select,
   Upload,
 } from "antd";
 import { FiSearch } from "react-icons/fi";
@@ -19,7 +17,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  SearchOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
@@ -27,31 +24,97 @@ import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import { truncateDescription } from "../../utils/common";
 import axios from "axios";
 import { htmlToText } from "html-to-text";
+
 const { Text } = Typography;
-const { Search } = Input;
+
+// Styled Components
+const Container = styled.div`
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+`;
+
+const Header = styled.h2`
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1d39c4;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+`;
+
+const SearchInput = styled(Input)`
+  width: 300px;
+  border-radius: 8px;
+  background-color: #f5f5f5;
+  transition: all 0.3s;
+
+  &:hover,
+  &:focus {
+    background-color: #fff;
+    border-color: #1d39c4;
+    box-shadow: 0 0 0 2px rgba(29, 57, 196, 0.2);
+  }
+`;
+
+const ActionButton = styled(Button)`
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s;
+
+  // &.ant-btn-primary {
+  //   background-color: #1d39c4;
+  //   border-color: #1d39c4;
+  // }
+`;
 
 const CustomModal = styled(Modal)`
+  .ant-modal-content {
+    border-radius: 12px;
+  }
+
+  .ant-modal-header {
+    border-radius: 12px 12px 0 0;
+    // background-color: #1d39c4;
+  }
+
+  .ant-modal-title {
+    color: #000;
+    font-weight: 600;
+  }
+
   .ant-modal-body {
-    max-height: 70vh; /* Adjust based on your needs */
+    max-height: 70vh;
     overflow-y: auto;
-    /* Custom scrollbar styles for WebKit browsers */
+    padding: 24px;
+
     &::-webkit-scrollbar {
-      width: 8px; /* Width of the scrollbar */
+      width: 8px;
     }
 
     &::-webkit-scrollbar-track {
-      background: #f1f1f1; /* Background color of the scrollbar track */
+      background: #f1f1f1;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #888; /* Color of the scrollbar thumb */
-      border-radius: 4px; /* Rounded corners for the scrollbar thumb */
+      background: #888;
+      border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-      background: #555; /* Color of the scrollbar thumb on hover */
+      background: #555;
     }
   }
+`;
+
+const ImagePreview = styled.img`
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  border-radius: 8px;
+  margin-top: 8px;
+  object-fit: cover;
 `;
 
 const SpecialtiesAdminPage = () => {
@@ -63,8 +126,12 @@ const SpecialtiesAdminPage = () => {
   useEffect(() => {
     const fetchSpecialties = async () => {
       setIsLoading(true);
-      const res = await axios.get("http://localhost:3000/specialties/list");
-      setSpecialties(res.data.specialties);
+      try {
+        const res = await axios.get("http://localhost:3000/specialties/list");
+        setSpecialties(res.data.specialties);
+      } catch (error) {
+        message.error("Lỗi khi tải danh sách chuyên khoa");
+      }
       setIsLoading(false);
     };
     fetchSpecialties();
@@ -78,60 +145,60 @@ const SpecialtiesAdminPage = () => {
 
   const handleDelete = async (id) => {
     try {
-      const res = await axios.delete(
-        `http://localhost:3000/specialties/delete/${id}`
-      );
-      console.log("res", res);
+      await axios.delete(`http://localhost:3000/specialties/delete/${id}`);
       setSpecialties(specialties.filter((item) => item.id !== id));
       message.success("Xóa chuyên khoa thành công");
     } catch (error) {
-      message.error(error.response.data.message);
-      console.log("error", error);
+      message.error(error.response?.data?.message || "Lỗi khi xóa chuyên khoa");
     }
   };
 
   const handleOk = async (formData) => {
-    if (editingSpecialty) {
-      const res = await axios.put(
-        `http://localhost:3000/specialties/update/${editingSpecialty.id}`,
-        formData
-      );
-      console.log("res", res);
-      setSpecialties((pre) =>
-        pre.map((item) =>
-          item.id === editingSpecialty.id
-            ? { ...item, ...res.data.updatedSpecialty }
-            : item
-        )
-      );
-    } else {
-      try {
+    setIsLoading(true);
+    try {
+      if (editingSpecialty) {
+        const res = await axios.put(
+          `http://localhost:3000/specialties/update/${editingSpecialty.id}`,
+          formData
+        );
+        setSpecialties((prev) =>
+          prev.map((item) =>
+            item.id === editingSpecialty.id
+              ? { ...item, ...res.data.updatedSpecialty }
+              : item
+          )
+        );
+        message.success("Cập nhật chuyên khoa thành công");
+      } else {
         const res = await axios.post(
           "http://localhost:3000/specialties/create-new",
           formData
         );
-        console.log("res", res);
-        setSpecialties((pre) => [...pre, { ...res.data.newSpecialty }]);
-      } catch (error) {
-        message.error(error.response.data.message);
-        console.log("error", error);
+        setSpecialties((prev) => [...prev, res.data.newSpecialty]);
+        message.success("Thêm chuyên khoa thành công");
       }
+      setIsModalVisible(false);
+      setEditingSpecialty(null);
+    } catch (error) {
+      message.error(error.response?.data?.message || "Lỗi khi lưu chuyên khoa");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsModalVisible(false);
-    setIsLoading(false);
   };
 
   const handleOpenModal = () => {
     setIsModalVisible(true);
+    setEditingSpecialty(null);
   };
 
   const handleCancel = () => {
     setIsModalVisible(false);
+    setEditingSpecialty(null);
   };
 
   return (
-    <>
+    <Container>
+      <Header>DANH SÁCH CHUYÊN KHOA</Header>
       <SpecialtiesList
         handleOpenModal={handleOpenModal}
         handleDelete={handleDelete}
@@ -139,25 +206,23 @@ const SpecialtiesAdminPage = () => {
         specialties={specialties}
         isLoading={isLoading}
       />
-
       <CustomModal
         title={
           editingSpecialty ? "Chỉnh sửa chuyên khoa" : "Thêm mới chuyên khoa"
         }
-        onOk={handleOk}
         open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
-        width={800}
+        width={900}
         maskClosable={false}
-        style={{
-          maxHeight: "90vh",
-          overflow: "hidden",
-        }}
       >
-        <SpecialtyForm initialValues={editingSpecialty} onSubmit={handleOk} />
+        <SpecialtyForm
+          initialValues={editingSpecialty}
+          onSubmit={handleOk}
+          isLoading={isLoading}
+        />
       </CustomModal>
-    </>
+    </Container>
   );
 };
 
@@ -168,30 +233,22 @@ const SpecialtiesList = ({
   handleOpenModal,
   isLoading,
 }) => {
-  const onChange = (value) => {
-    console.log(`selected ${value}`);
-  };
-  const onSearch = (value) => {
-    console.log("search:", value);
-  };
-
   const columns = [
     {
       title: "ID",
       dataIndex: "id",
       key: "id",
       align: "center",
-      width: "10%",
-      render: (text, record) => <div>{record.id}</div>,
+      width: 80,
+      render: (text) => <Text strong>{text}</Text>,
     },
     {
       title: "Ảnh",
       dataIndex: "photo",
       key: "photo",
       align: "center",
-      width: 60,
-      height: 60,
-      render: (text, record) => (
+      width: 100,
+      render: (photo) => (
         <div
           style={{
             width: 60,
@@ -199,14 +256,27 @@ const SpecialtiesList = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            borderRadius: 8,
+            overflow: "hidden",
+            backgroundColor: "#f5f5f5",
           }}
         >
-          <img
-            src={`http://localhost:3000${record.photo}`}
-            crossOrigin="anonymous"
-            alt={record.name}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          {photo ? (
+            <img
+              src={`http://localhost:3000${photo}`}
+              alt="specialty"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              onError={(e) =>
+                (e.target.src = "https://via.placeholder.com/60?text=No+Image")
+              }
+            />
+          ) : (
+            <img
+              src="https://via.placeholder.com/60?text=No+Image"
+              alt="placeholder"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
         </div>
       ),
     },
@@ -215,43 +285,44 @@ const SpecialtiesList = ({
       dataIndex: "name",
       key: "name",
       width: "20%",
-      render: (text, record) => <p>{truncateDescription(record.name, 20)}</p>,
+      render: (text) => (
+        <Text style={{ fontWeight: 500 }}>{truncateDescription(text, 30)}</Text>
+      ),
     },
     {
       title: "Mô tả",
       dataIndex: "description",
       key: "description",
-      width: "30%",
-      render: (text, record) => (
+      render: (text) => (
         <div
           style={{
-            width: "100%",
+            maxWidth: "100%",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            whiteSpace: "normal",
+            lineHeight: "1.5",
           }}
         >
-          {truncateDescription(htmlToText(record.description), 100)}
+          {truncateDescription(htmlToText(text), 150)}
         </div>
       ),
     },
     {
       title: "Hành động",
       key: "action",
-      dataIndex: "action",
       align: "center",
-      width: "10%",
-      render: (text, record) => (
-        <Space>
-          <Tooltip placement="bottom" title="Chỉnh sửa">
+      width: 120,
+      render: (_, record) => (
+        <Space size="middle">
+          <Tooltip title="Chỉnh sửa">
             <Button
               icon={<EditOutlined />}
               onClick={() => handleEdit(record.id)}
               type="text"
+              style={{ color: "#0165fc" }}
             />
           </Tooltip>
-
-          <Tooltip placement="bottom" title="Xóa">
+          <Tooltip title="Xóa">
             <Button
               icon={<DeleteOutlined />}
               onClick={() => handleDelete(record.id)}
@@ -263,51 +334,45 @@ const SpecialtiesList = ({
       ),
     },
   ];
+
   return (
-    <div style={{ backgroundColor: "#fff", padding: 16, borderRadius: 7 }}>
-      <h2 style={{ textAlign: "center" }}>DANH SÁCH CHUYÊN KHOA</h2>
+    <div>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "10px",
-          gap: 10,
+          marginBottom: 24,
         }}
       >
-        <Input
-          placeholder="Tìm kiếm"
-          style={{
-            width: "20%",
-            marginBottom: "10px",
-            backgroundColor: "#D9D9D9",
-          }}
-          prefix={<FiSearch />}
+        <SearchInput
+          placeholder="Tìm kiếm chuyên khoa"
+          prefix={<FiSearch style={{ color: "#8c8c8c" }} />}
         />
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Button
-            type="primary"
-            onClick={handleOpenModal}
-            icon={<PlusOutlined />}
-          >
-            Thêm mới
-          </Button>
-        </div>
+        <ActionButton
+          type="primary"
+          onClick={handleOpenModal}
+          icon={<PlusOutlined />}
+        >
+          Thêm mới
+        </ActionButton>
       </div>
       <Table
         columns={columns}
         dataSource={specialties}
-        size="small"
         rowKey="id"
         loading={isLoading}
+        pagination={{ pageSize: 10 }}
+        rowClassName={() => "hover-row"}
+        style={{ borderRadius: 8, overflow: "hidden" }}
       />
     </div>
   );
 };
 
 const SpecialtyForm = ({ initialValues, onSubmit, isLoading }) => {
-  const [file, setFile] = useState([]);
-  const [description, setDescription] = useState(null);
+  const [fileList, setFileList] = useState([]);
+  const [description, setDescription] = useState("");
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -315,9 +380,9 @@ const SpecialtyForm = ({ initialValues, onSubmit, isLoading }) => {
       form.setFieldsValue({
         name: initialValues.name,
       });
-      setDescription(initialValues.description);
+      setDescription(initialValues.description || "");
       if (initialValues.photo) {
-        setFile([
+        setFileList([
           {
             uid: "-1",
             name: "image.png",
@@ -325,56 +390,73 @@ const SpecialtyForm = ({ initialValues, onSubmit, isLoading }) => {
             url: `http://localhost:3000${initialValues.photo}`,
           },
         ]);
+      } else {
+        setFileList([]);
       }
+    } else {
+      form.resetFields();
+      setDescription("");
+      setFileList([]);
     }
-  }, [initialValues]);
+  }, [initialValues, form]);
+
   const handleSubmit = () => {
     form.validateFields().then((values) => {
       const formData = new FormData();
       formData.append("name", values.name);
-      formData.append("photo", file[0].originFileObj);
-      formData.append("description", description);
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        formData.append("photo", fileList[0].originFileObj);
+      }
+      formData.append("description", description || "");
       onSubmit(formData);
       form.resetFields();
-      setFile([]);
-      setDescription(null);
+      setFileList([]);
+      setDescription("");
     });
   };
 
-  const handleUpload = (value) => {
-    setFile(value.fileList);
-    console.log(value.fileList);
+  const handleUpload = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
   };
 
   return (
-    <Form form={form} layout="vertical" initialValues={initialValues}>
+    <Form form={form} layout="vertical">
       <Form.Item
         name="name"
         label="Tên chuyên khoa"
         rules={[{ required: true, message: "Vui lòng nhập tên chuyên khoa" }]}
       >
-        <Input placeholder="Nhập tên chuyên khoa" name="name" />
+        <Input placeholder="Nhập tên chuyên khoa" style={{ borderRadius: 8 }} />
       </Form.Item>
       <Form.Item
         label="Ảnh chuyên khoa"
         name="photo"
         rules={[
           {
-            required: initialValues ? false : true,
-            message: "Vui lòng upload ảnh!",
+            required: !initialValues,
+            message: "Vui lòng chọn ảnh chuyên khoa",
           },
         ]}
-        valuePropName="file"
       >
         <Upload
-          accept=".jpg, .jpeg, .png"
+          accept=".jpg,.jpeg,.png"
           maxCount={1}
           beforeUpload={() => false}
-          onChange={handleUpload} // Xử lý sự kiện khi chọn file
-          fileList={file}
+          onChange={handleUpload}
+          fileList={fileList}
+          listType="picture"
         >
-          <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
+          <ActionButton icon={<UploadOutlined />}>Chọn ảnh</ActionButton>
         </Upload>
+        {fileList.length > 0 && fileList[0].url && (
+          <ImagePreview
+            src={fileList[0].url}
+            alt="preview"
+            onError={(e) =>
+              (e.target.src = "https://via.placeholder.com/200?text=No+Image")
+            }
+          />
+        )}
       </Form.Item>
       <Form.Item
         name="description"
@@ -395,10 +477,8 @@ const SpecialtyForm = ({ initialValues, onSubmit, isLoading }) => {
               "bold",
               "italic",
               "link",
-              "imageUpload",
               "bulletedList",
               "numberedList",
-              "blockQuote",
               "|",
               "undo",
               "redo",
@@ -406,16 +486,31 @@ const SpecialtyForm = ({ initialValues, onSubmit, isLoading }) => {
           }}
         />
       </Form.Item>
-      <Button
-        type="primary"
-        htmlType="submit"
-        onClick={handleSubmit}
-        loading={isLoading}
-      >
-        {initialValues ? "Cập nhật" : "Thêm mới"}
-      </Button>
+      <Form.Item>
+        <ActionButton
+          type="primary"
+          onClick={handleSubmit}
+          loading={isLoading}
+          block
+        >
+          {initialValues ? "Cập nhật" : "Thêm mới"}
+        </ActionButton>
+      </Form.Item>
     </Form>
   );
 };
 
 export default SpecialtiesAdminPage;
+
+// CSS for table row hover effect
+const styles = `
+  .hover-row:hover {
+    background-color: #f5f5f5;
+    transition: background-color 0.3s;
+  }
+`;
+
+// Inject styles
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);

@@ -5,43 +5,36 @@ import {
   Button,
   Row,
   Col,
-  TimePicker,
   message,
   Spin,
   notification,
   Card,
-  Typography,
+  Modal,
 } from "antd";
 import { useEffect, useState } from "react";
-import { UploadOutlined } from "@ant-design/icons";
+import { UploadOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import axiosInstance from "../../../apis/axiosConfig";
 import axios from "axios";
-import dayjs from "dayjs";
 import "../../../index.css";
 import "../../../pages/hospitalManager/style.css";
 import { FaMagnifyingGlassLocation } from "react-icons/fa6";
 
-import moment from "moment";
-
 const HERE_API_KEY = "te9pF-AZqdY4Dez0jND9_-Eh_Xpe7DWthoixEhgtmeE";
+
 const HospitalForm = () => {
   const [form] = Form.useForm();
   const [description, setDescription] = useState("");
   const [initialValues, setInitialValues] = useState(null);
-  const [avatar, setAvatar] = useState(null);
-  const [banner, setBanner] = useState(null);
+  const [avatar, setAvatar] = useState([]);
+  const [banner, setBanner] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  const [address, setAddress] = useState(""); // Thêm state để lưu địa chỉ
+  const [address, setAddress] = useState("");
 
-  console.log("address", latitude, longitude);
-
-  const format = "HH:mm";
-
-  // get hospital info
+  // Fetch hospital info
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -52,6 +45,8 @@ const HospitalForm = () => {
           email: res.hospital.email,
           phone: res.hospital.phone,
           address: res.hospital.address,
+          latitude: res.hospital.latitude,
+          longitude: res.hospital.longitude,
         };
         form.setFieldsValue(hospital);
         setInitialValues({
@@ -61,11 +56,14 @@ const HospitalForm = () => {
           banner: res.hospital.banner,
         });
         setDescription(res.hospital.description || "");
+        setAddress(res.hospital.address || "");
+        setLatitude(res.hospital.latitude || "");
+        setLongitude(res.hospital.longitude || "");
         if (res.hospital.avatar) {
           setAvatar([
             {
               uid: "-1",
-              name: "image.png",
+              name: "avatar.png",
               status: "done",
               url: `http://localhost:3000${res.hospital.avatar}`,
             },
@@ -74,45 +72,46 @@ const HospitalForm = () => {
         if (res.hospital.banner) {
           setBanner([
             {
-              uid: "-1",
+              uid: "-2",
               name: res.hospital.banner.split("/").pop(),
               status: "done",
               url: `http://localhost:3000${res.hospital.banner}`,
             },
           ]);
         }
-        setIsLoading(false);
-        console.log(res.hospital);
       } catch (error) {
-        console.log(error);
+        notification.error({
+          message: "Lỗi",
+          description: "Không thể tải thông tin cơ sở y tế!",
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
   }, [form]);
 
-  console.log("initialValues", initialValues);
-
-  // Hàm reverse geocoding để lấy địa chỉ từ tọa độ
+  // Reverse geocoding to get address from coordinates
   const fetchAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const res = await fetch(
         `https://revgeocode.search.hereapi.com/v1/revgeocode?at=${latitude},${longitude}&lang=vi-VN&apiKey=${HERE_API_KEY}`
       );
       const data = await res.json();
-      console.log(data);
       if (data.items && data.items.length > 0) {
         const location = data.items[0];
-        setAddress(location.address.label); // Đặt địa chỉ vào state
-        form.setFieldsValue({
-          address: location.address.label, // Cập nhật giá trị vào ô Input
-        });
+        setAddress(location.address.label);
+        form.setFieldsValue({ address: location.address.label });
       }
     } catch (error) {
-      console.log("Error fetching address:", error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể lấy địa chỉ từ tọa độ!",
+      });
     }
   };
 
-  // Hàm lấy vị trí hiện tại
+  // Get current location
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -124,7 +123,7 @@ const HospitalForm = () => {
             latitude: latitude.toString(),
             longitude: longitude.toString(),
           });
-          fetchAddressFromCoordinates(latitude, longitude); // Gọi hàm reverse geocoding
+          fetchAddressFromCoordinates(latitude, longitude);
           message.success("Lấy vị trí thành công!");
         },
         (error) => {
@@ -136,69 +135,127 @@ const HospitalForm = () => {
     }
   };
 
+  // Handle form submission
   const handleFinish = async (values) => {
-    const formData = new FormData();
-    formData.append("name", values.name || initialValues.name);
-    formData.append("email", values.email || initialValues.email);
-    formData.append("phone", values.phone || initialValues.phone);
-    formData.append(
-      "address",
-      address || values.address || initialValues.address
-    );
-    formData.append("description", description || initialValues.description);
-    formData.append("latitude", latitude || initialValues.latitude || "");
-    formData.append("longitude", longitude || initialValues.longitude || "");
-
-    if (avatar && avatar[0] && avatar[0].originFileObj) {
-      formData.append("avatar", avatar[0].originFileObj);
-    } else {
-      formData.append("avatar", initialValues.avatar);
-    }
-    if (banner && banner[0] && banner[0].originFileObj) {
-      formData.append("banner", banner[0].originFileObj);
-    } else {
-      formData.append("banner", initialValues.banner);
-    }
-
-    try {
-      setIsLoading(true);
-      const res = await axios.put(
-        "http://localhost:3000/hospitals/update",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      console.log("res", res);
-
-      setIsLoading(false);
-      notification.success({
-        message: "Thành công!",
-        description:
-          "Bệnh viện đã được cập nhật thành công!, hãy tiến hành các thông tin tiếp theo dể hoàn thành quá trình đăng ký!",
+    // Validate avatar and banner
+    if (!avatar.length && !initialValues?.avatar) {
+      notification.error({
+        message: "Lỗi",
+        description: "Vui lòng tải ảnh đại diện!",
       });
-    } catch (error) {
-      console.log(error);
+      return;
     }
-  };
-  const onChangeAvatar = (value) => {
-    setAvatar(value.fileList);
+    if (!banner.length && !initialValues?.banner) {
+      notification.error({
+        message: "Lỗi",
+        description: "Vui lòng tải ảnh bìa!",
+      });
+      return;
+    }
+
+    Modal.confirm({
+      title: "Xác nhận cập nhật",
+      content: "Bạn có chắc muốn cập nhật thông tin cơ sở y tế?",
+      okText: "Cập nhật",
+      cancelText: "Hủy",
+      onOk: async () => {
+        const formData = new FormData();
+        formData.append("name", values.name || initialValues.name);
+        formData.append("email", values.email || initialValues.email);
+        formData.append("phone", values.phone || initialValues.phone);
+        formData.append(
+          "address",
+          address || values.address || initialValues.address
+        );
+        formData.append(
+          "description",
+          description || initialValues.description
+        );
+        formData.append("latitude", latitude || initialValues.latitude || "");
+        formData.append(
+          "longitude",
+          longitude || initialValues.longitude || ""
+        );
+
+        if (avatar && avatar[0] && avatar[0].originFileObj) {
+          formData.append("avatar", avatar[0].originFileObj);
+        } else if (initialValues.avatar) {
+          formData.append("avatar", initialValues.avatar);
+        }
+        if (banner && banner[0] && banner[0].originFileObj) {
+          formData.append("banner", banner[0].originFileObj);
+        } else if (initialValues.banner) {
+          formData.append("banner", initialValues.banner);
+        }
+
+        try {
+          setIsLoading(true);
+          const res = await axios.put(
+            "http://localhost:3000/hospitals/update",
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+          notification.success({
+            message: "Thành công",
+            description: "Cập nhật thông tin cơ sở y tế thành công!",
+          });
+        } catch (error) {
+          notification.error({
+            message: "Lỗi",
+            description:
+              error.response?.data?.message ||
+              "Không thể cập nhật thông tin cơ sở y tế!",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
   };
 
-  const onChangeBanner = (value) => {
-    setBanner(value.fileList);
+  // Handle avatar and banner upload
+  const onChangeAvatar = ({ fileList }) => {
+    setAvatar(fileList);
+  };
+
+  const onChangeBanner = ({ fileList }) => {
+    setBanner(fileList);
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+    <Card
+      title="Thông tin cơ sở y tế"
+      style={{
+        maxWidth: 800,
+        margin: "20px auto",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+        borderRadius: 8,
+      }}
+      headStyle={{
+        backgroundColor: "#0165fc",
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "bold",
+        textAlign: "center",
+      }}
+    >
       {isLoading ? (
-        <Spin />
+        <div style={{ textAlign: "center", padding: "20px" }}>
+          <Spin size="large" />
+        </div>
       ) : (
-        <Form form={form} layout="vertical" onFinish={handleFinish}>
-          <Row gutter={16}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFinish}
+          style={{ padding: "20px" }}
+        >
+          <Row gutter={[16, 16]}>
             <Col span={12}>
               <Form.Item
                 label="Tên cơ sở y tế"
@@ -207,115 +264,184 @@ const HospitalForm = () => {
                   { required: true, message: "Vui lòng nhập tên cơ sở y tế!" },
                 ]}
               >
-                <Input placeholder="Tên cơ sở y tế" />
+                <Input
+                  placeholder="Tên cơ sở y tế"
+                  style={{ borderRadius: 6 }}
+                />
               </Form.Item>
             </Col>
-            <Col style={{ display: "flex", flexDirection: "row", gap: "10px" }}>
-              <Col span={12}>
-                <Form.Item
-                  label="Ảnh đại diện"
-                  name="avatar"
-                  rules={[
-                    {
-                      required: !initialValues?.avatar,
-                      message: "Vui lòng tải ảnh đại diện!",
-                    },
-                  ]}
-                >
-                  <Upload
-                    listType="text"
-                    maxCount={1}
-                    beforeUpload={() => false}
-                    onChange={onChangeAvatar}
-                    fileList={avatar}
-                    accept=".jpg, .jpeg, .png"
-                  >
-                    <Button icon={<UploadOutlined />}>Tải ảnh</Button>
-                  </Upload>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label="Ảnh bìa"
-                  name="banner"
-                  rules={[
-                    {
-                      required: !initialValues?.banner,
-                      message: "Vui lòng tải ảnh bìa!",
-                    },
-                  ]}
-                >
-                  <Upload
-                    listType="text"
-                    maxCount={1}
-                    beforeUpload={() => false}
-                    onChange={onChangeBanner}
-                    fileList={banner}
-                    accept=".jpg, .jpeg, .png"
-                  >
-                    <Button icon={<UploadOutlined />}>Tải ảnh</Button>
-                  </Upload>
-                </Form.Item>
-              </Col>
-            </Col>
-          </Row>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: "10px",
-              alignItems: "center",
-              width: "100%",
-            }}
-          >
-            <Form.Item
-              label="Địa chỉ"
-              name="address"
-              rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
-              style={{ width: "70%" }}
-            >
-              <Input placeholder="Địa chỉ" />
-            </Form.Item>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                gap: "10px",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#0165fc",
-                padding: 5,
-                borderRadius: "5px",
-              }}
-            >
-              <FaMagnifyingGlassLocation size={20} color="#fff" />
-              <Typography.Link
-                style={{
-                  color: "#fff",
-                  fontStyle: "italic",
-                  cursor: "pointer",
-                }}
-                onClick={handleGetCurrentLocation}
-              >
-                Lấy vị trí hiện tại
-              </Typography.Link>
-            </div>
-          </div>
-
-          {/* <Col span={8}>
+            <Col span={12}>
               <Form.Item
                 label="Email"
                 name="email"
-                rules={[{ required: true, message: "Vui lòng nhập email!" }]}
+                rules={[
+                  { required: true, message: "Vui lòng nhập email!" },
+                  { type: "email", message: "Email không hợp lệ!" },
+                ]}
               >
-                <Input placeholder="Email" type="email" />
+                <Input
+                  placeholder="Email"
+                  type="email"
+                  style={{ borderRadius: 6 }}
+                />
               </Form.Item>
-            </Col> */}
-
+            </Col>
+          </Row>
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <Form.Item
+                label="Số điện thoại"
+                name="phone"
+                rules={[
+                  { required: true, message: "Vui lòng nhập số điện thoại!" },
+                  {
+                    pattern: /^[0-9]{10}$/,
+                    message: "Số điện thoại phải có 10 chữ số!",
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="Số điện thoại"
+                  style={{ borderRadius: 6 }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Địa chỉ"
+                name="address"
+                rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
+              >
+                <Input
+                  placeholder="Địa chỉ"
+                  style={{ borderRadius: 6 }}
+                  suffix={
+                    <Button
+                      type="link"
+                      icon={<FaMagnifyingGlassLocation />}
+                      onClick={handleGetCurrentLocation}
+                      style={{ color: "#0165fc" }}
+                    >
+                      Lấy vị trí
+                    </Button>
+                  }
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <Form.Item
+                label="Kinh độ"
+                name="longitude"
+                rules={[{ required: true, message: "Vui lòng nhập kinh độ!" }]}
+              >
+                <Input
+                  placeholder="Kinh độ"
+                  style={{ borderRadius: 6 }}
+                  disabled
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Vĩ độ"
+                name="latitude"
+                rules={[{ required: true, message: "Vui lòng nhập vĩ độ!" }]}
+              >
+                <Input
+                  placeholder="Vĩ độ"
+                  style={{ borderRadius: 6 }}
+                  disabled
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <Form.Item
+                label="Ảnh đại diện"
+                name="avatar"
+                rules={[
+                  {
+                    validator: (_, value) =>
+                      !initialValues?.avatar && (!value || value.length === 0)
+                        ? Promise.reject("Vui lòng tải ảnh đại diện!")
+                        : Promise.resolve(),
+                  },
+                ]}
+              >
+                <Upload
+                  listType="picture-card"
+                  maxCount={1}
+                  // beforeUpload={() => false}
+                  onChange={onChangeAvatar}
+                  fileList={avatar}
+                  accept=".jpg,.jpeg,.png"
+                  beforeUpload={(file) => {
+                    const isLt2M = file.size / 1024 / 1024 < 2;
+                    if (!isLt2M) {
+                      notification.error({
+                        message: "Lỗi",
+                        description: "Ảnh phải nhỏ hơn 2MB!",
+                      });
+                    }
+                    return isLt2M;
+                  }}
+                >
+                  {avatar.length < 1 && (
+                    <div>
+                      <UploadOutlined />
+                      <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                    </div>
+                  )}
+                </Upload>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Ảnh bìa"
+                name="banner"
+                rules={[
+                  {
+                    validator: (_, value) =>
+                      !initialValues?.banner && (!value || value.length === 0)
+                        ? Promise.reject("Vui lòng tải ảnh bìa!")
+                        : Promise.resolve(),
+                  },
+                ]}
+              >
+                <Upload
+                  listType="picture-card"
+                  maxCount={1}
+                  // beforeUpload={() => false}
+                  onChange={onChangeBanner}
+                  fileList={banner}
+                  accept=".jpg,.jpeg,.png"
+                  beforeUpload={(file) => {
+                    const isLt2M = file.size / 1024 / 1024 < 2;
+                    if (!isLt2M) {
+                      notification.error({
+                        message: "Lỗi",
+                        description: "Ảnh phải nhỏ hơn 2MB!",
+                      });
+                    }
+                    return isLt2M;
+                  }}
+                >
+                  {banner.length < 1 && (
+                    <div>
+                      <UploadOutlined />
+                      <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                    </div>
+                  )}
+                </Upload>
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item
             label="Mô tả"
+            name="description"
             rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
           >
             <CKEditor
@@ -332,7 +458,6 @@ const HospitalForm = () => {
                   "bold",
                   "italic",
                   "link",
-                  "imageUpload",
                   "bulletedList",
                   "numberedList",
                   "blockQuote",
@@ -340,251 +465,28 @@ const HospitalForm = () => {
                   "undo",
                   "redo",
                 ],
-                maxHeight: 100,
+                placeholder: "Nhập mô tả cơ sở y tế...",
               }}
             />
           </Form.Item>
-
           <Form.Item>
-            <Button type="primary" htmlType="submit">
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<CheckCircleOutlined />}
+              style={{
+                backgroundColor: "#0165fc",
+                borderRadius: 6,
+                padding: "0 20px",
+              }}
+            >
               Cập nhật
             </Button>
           </Form.Item>
         </Form>
       )}
-    </div>
+    </Card>
   );
 };
 
 export default HospitalForm;
-
-// import {
-//   Form,
-//   Input,
-//   Upload,
-//   Button,
-//   Row,
-//   Col,
-//   notification,
-//   Spin,
-//   message,
-// } from "antd";
-// import { useEffect, useState } from "react";
-// import { UploadOutlined } from "@ant-design/icons";
-// import { CKEditor } from "@ckeditor/ckeditor5-react";
-// import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
-// import axiosInstance from "../../../apis/axiosConfig";
-// import dayjs from "dayjs";
-// import "../../../index.css";
-
-// // Thay thế YOUR_HERE_API_KEY bằng API Key từ HERE Maps
-
-// const HospitalForm = () => {
-//   const [form] = Form.useForm();
-//   const [description, setDescription] = useState("");
-//   const [initialValues, setInitialValues] = useState(null);
-//   const [avatar, setAvatar] = useState(null);
-//   const [banner, setBanner] = useState(null);
-//   const [isLoading, setIsLoading] = useState(false);
-
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       try {
-//         setIsLoading(true);
-//         const res = await axiosInstance.get("/hospitals");
-//         const hospital = {
-//           name: res.hospital.name,
-//           email: res.hospital.email,
-//           phone: res.hospital.phone,
-//           address: res.hospital.address,
-//         };
-//         form.setFieldsValue(hospital);
-//         setInitialValues({
-//           ...hospital,
-//           description: res.hospital.description,
-//           avatar: res.hospital.avatar,
-//           banner: res.hospital.banner,
-//         });
-//         setDescription(res.hospital.description || "");
-//         setIsLoading(false);
-//       } catch (error) {
-//         console.log(error);
-//       }
-//     };
-//     fetchData();
-//   }, [form]);
-
-// const handleGetCurrentLocation = () => {
-//   if (navigator.geolocation) {
-//     navigator.geolocation.getCurrentPosition(
-//       (position) => {
-//         const { latitude, longitude } = position.coords;
-//         setLatitude(latitude);
-//         setLongitude(longitude);
-//         form.setFieldsValue({
-//           latitude: latitude.toString(),
-//           longitude: longitude.toString(),
-//         });
-//         fetchAddressFromCoordinates(latitude, longitude); // Gọi hàm reverse geocoding
-//         notification.success({
-//           message: "Lấy vị trí thành công!",
-//           description: `Latitude: ${latitude}, Longitude: ${longitude}`,
-//         });
-//       },
-//       (error) => {
-//         switch (error.code) {
-//           case error.PERMISSION_DENIED:
-//             notification.error({
-//               message: "Quyền truy cập vị trí bị từ chối",
-//               description:
-//                 "Vui lòng cấp quyền truy cập vị trí trong cài đặt trình duyệt.",
-//             });
-//             break;
-//           case error.POSITION_UNAVAILABLE:
-//             notification.error({
-//               message: "Vị trí không khả dụng",
-//               description: "Không thể lấy vị trí hiện tại. Vui lòng thử lại.",
-//             });
-//             break;
-//           case error.TIMEOUT:
-//             notification.error({
-//               message: "Thời gian lấy vị trí hết hạn",
-//               description: "Vui lòng thử lại.",
-//             });
-//             break;
-//           case error.UNKNOWN_ERROR:
-//             notification.error({
-//               message: "Lỗi không xác định",
-//               description: "Đã xảy ra lỗi khi cố gắng lấy vị trí.",
-//             });
-//             break;
-//           default:
-//             notification.error({
-//               message: "Lỗi",
-//               description: "Đã xảy ra lỗi khi cố gắng lấy vị trí.",
-//             });
-//         }
-//       }
-//     );
-//   } else {
-//     notification.error({
-//       message: "Trình duyệt không hỗ trợ Geolocation",
-//       description: "Vui lòng sử dụng trình duyệt khác.",
-//     });
-//   }
-// };
-
-//   const handleFinish = async (values) => {
-//     const formData = new FormData();
-//     formData.append("name", values.name);
-//     formData.append("email", values.email);
-//     formData.append("phone", values.phone);
-//     formData.append("address", address || values.address); // Lấy địa chỉ từ state nếu có
-//     formData.append("description", description);
-//     formData.append("latitude", latitude);
-//     formData.append("longitude", longitude);
-
-//     if (avatar && avatar[0] && avatar[0].originFileObj) {
-//       formData.append("avatar", avatar[0].originFileObj);
-//     }
-//     if (banner && banner[0] && banner[0].originFileObj) {
-//       formData.append("banner", banner[0].originFileObj);
-//     }
-
-//     try {
-//       setIsLoading(true);
-//       const res = await axios.put(
-//         "http://localhost:3000/hospitals/update",
-//         formData,
-//         {
-//           headers: {
-//             "Content-Type": "multipart/form-data",
-//             Authorization: `Bearer ${localStorage.getItem("token")}`,
-//           },
-//         }
-//       );
-//       setIsLoading(false);
-//       notification.success({
-//         message: "Thành công!",
-//         description: "Bệnh viện đã được cập nhật thành công!",
-//       });
-//     } catch (error) {
-//       console.log(error);
-//     }
-//   };
-
-//   return (
-//     <>
-//       {isLoading ? (
-//         <Spin />
-//       ) : (
-//         <Form form={form} layout="vertical" onFinish={handleFinish}>
-//           <Row gutter={16}>
-//             <Col span={12}>
-//               <Form.Item
-//                 label="Tên bệnh viện"
-//                 name="name"
-//                 rules={[
-//                   { required: true, message: "Vui lòng nhập tên bệnh viện!" },
-//                 ]}
-//               >
-//                 <Input placeholder="Tên bệnh viện" />
-//               </Form.Item>
-//             </Col>
-//             <Col span={12}>
-//               <Form.Item
-//                 label="Email"
-//                 name="email"
-//                 rules={[{ required: true, message: "Vui lòng nhập email!" }]}
-//               >
-//                 <Input placeholder="Email" type="email" />
-//               </Form.Item>
-//             </Col>
-//           </Row>
-//           <Row>
-//             <Col span={24}>
-//               <Form.Item
-//                 label="Địa chỉ"
-//                 name="address"
-//                 rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
-//               >
-//                 <Input placeholder="Địa chỉ" value={address} />
-//               </Form.Item>
-//             </Col>
-//           </Row>
-//           <Row gutter={16}>
-//             <Col span={12}>
-//               <Form.Item
-//                 label="Vĩ độ"
-//                 name="latitude"
-//                 rules={[{ required: true, message: "Vui lòng lấy vị trí!" }]}
-//               >
-//                 <Input placeholder="Latitude" value={latitude} readOnly />
-//               </Form.Item>
-//             </Col>
-//             <Col span={12}>
-//               <Form.Item
-//                 label="Kinh độ"
-//                 name="longitude"
-//                 rules={[{ required: true, message: "Vui lòng lấy vị trí!" }]}
-//               >
-//                 <Input placeholder="Longitude" value={longitude} readOnly />
-//               </Form.Item>
-//             </Col>
-//           </Row>
-//           <Button type="dashed" onClick={handleGetCurrentLocation}>
-//             Lấy vị trí hiện tại
-//           </Button>
-
-//           <Form.Item>
-//             <Button type="primary" htmlType="submit">
-//               Cập nhật
-//             </Button>
-//           </Form.Item>
-//         </Form>
-//       )}
-//     </>
-//   );
-// };
-
-// export default HospitalForm;

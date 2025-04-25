@@ -10,6 +10,7 @@ import {
   notification,
   message,
   Tooltip,
+  Input,
 } from "antd";
 import { EditOutlined, EyeOutlined } from "@ant-design/icons";
 import axiosConfig from "../../apis/axiosConfig";
@@ -17,7 +18,6 @@ import moment from "moment";
 
 const { TabPane } = Tabs;
 
-// translate status
 const statusOptions = [
   {
     value: "pending",
@@ -39,17 +39,16 @@ const statusOptions = [
   },
 ];
 
-const filterStatusOptions = statusOptions?.filter(
+const filterStatusOptions = statusOptions.filter(
   (option) => option.value !== "completed" && option.value !== "pending"
 );
 
-// Cấu hình cột cho bảng lịch hẹn
 const columns = (onEditClick) => [
   {
     title: "Tên nhân viên",
     dataIndex: "fullname",
     key: "fullname",
-    render: (_, record) => record?.doctor.fullname,
+    render: (_, record) => record?.doctor?.user?.fullname,
   },
   {
     title: "Tiêu đề",
@@ -126,6 +125,7 @@ const TimeOffList = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [selectedStatus, setSelectedStatus] = useState(null);
+  const [reasonReject, setReasonReject] = useState("");
 
   const fetchData = async () => {
     try {
@@ -138,6 +138,7 @@ const TimeOffList = () => {
     }
   };
 
+  console.log("data", data);
   useEffect(() => {
     fetchData();
   }, []);
@@ -149,41 +150,76 @@ const TimeOffList = () => {
   const handleEditClick = (data) => {
     setSelectedData(data);
     setSelectedStatus(data?.status);
-    form.setFieldsValue({ status: data?.status });
+    setReasonReject(data?.reason_reject || "");
+    form.setFieldsValue({
+      status: data?.status,
+      reason_reject: data?.reason_reject || "",
+    });
     setIsModalVisible(true);
   };
 
   const handleCancel = () => {
     setIsModalVisible(false);
+    setSelectedStatus(null);
+    setReasonReject("");
+    form.resetFields();
   };
 
   const handleOk = async () => {
     try {
+      // Validate reason_reject if status is rejected
+      if (selectedStatus === "rejected" && !reasonReject.trim()) {
+        message.error("Vui lòng nhập lý do từ chối");
+        return;
+      }
+
       const res = await axiosConfig.patch(
         `/doctor-unavailable-times/update-status/${selectedData?.id}`,
-        { status: selectedStatus }
+        {
+          status: selectedStatus,
+          reason_reject: selectedStatus === "rejected" ? reasonReject : null,
+        }
       );
-      message.success("Cập nhật trạng thái thành công");
+      notification.success({
+        message: "Thành công",
+        description: "Cập nhật trạng thái đơn thành công!",
+        placement: "topRight",
+        duration: 3,
+      });
       fetchData();
+      setIsModalVisible(false);
+      setSelectedStatus(null);
+      setReasonReject("");
+      form.resetFields();
     } catch (error) {
       console.log(error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể cập nhật trạng thái đơn. Vui lòng thử lại!",
+        placement: "topRight",
+        duration: 3,
+      });
     }
   };
 
-  // Lọc dữ liệu cho từng tab
   const allData = data;
   const pendingData = data?.filter((item) => item.status === "pending");
-  const completedData = data?.filter((item) => item.status === "completed");
   const confirmedData = data?.filter((item) => item.status === "rejected");
-  console.log("allData", pendingData);
+
   return (
-    <>
+    <div
+      style={{
+        padding: 24,
+        background: "#fff",
+        minHeight: "100vh",
+      }}
+    >
       <Tabs
         activeKey={activeTab}
         onChange={handleTabChange}
         className="custom-tabs"
       >
-        <TabPane tab="Tất cả " key="1">
+        <TabPane tab="Tất cả" key="1">
           <Table
             dataSource={allData}
             size="small"
@@ -214,22 +250,21 @@ const TimeOffList = () => {
         open={isModalVisible}
         onCancel={handleCancel}
         okButtonProps={{
-          disabled: selectedStatus === selectedData?.status,
-        }} // Vô hiệu hóa nút OK khi trạng thái không thay đổi
+          disabled: selectedStatus === selectedData?.status && !reasonReject,
+        }}
         onOk={handleOk}
       >
         {selectedData && (
-          <div
-            style={{
-              marginBottom: 10,
-              marginTop: 10,
-              alignItems: "center",
-            }}
-          >
+          <div style={{ marginBottom: 10, marginTop: 10 }}>
             <p style={{ fontWeight: "500", fontSize: 16 }}>
               {selectedData?.title}
             </p>
             <p>{`Lý do: ${selectedData?.reason}`}</p>
+            {selectedData?.reason_reject && (
+              <p style={{ color: "#EB5757" }}>
+                {`Lý do từ chối: ${selectedData?.reason_reject}`}
+              </p>
+            )}
             <p style={{ color: "#828282", fontStyle: "italic" }}>
               {`Từ ${moment(selectedData?.unavailable_start_date).format(
                 "DD/MM/YYYY HH:mm"
@@ -265,7 +300,11 @@ const TimeOffList = () => {
           </div>
         )}
         <Form form={form} layout="vertical">
-          <Form.Item label="Trạng thái" name="status">
+          <Form.Item
+            label="Trạng thái"
+            name="status"
+            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
+          >
             <Radio.Group
               onChange={(e) => setSelectedStatus(e.target.value)}
               value={selectedStatus}
@@ -283,9 +322,25 @@ const TimeOffList = () => {
                 ))}
             </Radio.Group>
           </Form.Item>
+          {selectedStatus === "rejected" && (
+            <Form.Item
+              label="Lý do từ chối"
+              name="reason_reject"
+              rules={[
+                { required: true, message: "Vui lòng nhập lý do từ chối" },
+              ]}
+            >
+              <Input.TextArea
+                rows={4}
+                value={reasonReject}
+                onChange={(e) => setReasonReject(e.target.value)}
+                placeholder="Nhập lý do từ chối"
+              />
+            </Form.Item>
+          )}
         </Form>
       </Modal>
-    </>
+    </div>
   );
 };
 

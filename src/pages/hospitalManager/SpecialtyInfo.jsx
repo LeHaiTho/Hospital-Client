@@ -82,9 +82,6 @@ const SpecialtyInfo = () => {
           <p style={{ fontStyle: "italic" }}>
             {truncateDescription(record.description, 100)}
           </p>
-          <span style={{ fontSize: "12px", color: "#797979" }}>
-            Lượt khám: 39
-          </span>
         </div>
       ),
     },

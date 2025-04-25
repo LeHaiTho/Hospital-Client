@@ -2,20 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import {
-  Card,
-  Checkbox,
-  Select,
-  Tooltip,
-  DatePicker,
-  Button,
-  message,
-  notification,
-} from "antd";
-import { PiWarningCircleLight } from "react-icons/pi";
+import { Checkbox, Select, DatePicker, Button, notification } from "antd";
 import "./style.css";
 import axiosConfig from "../../apis/axiosConfig";
 import dayjs from "dayjs";
+
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 const localizer = momentLocalizer(moment);
@@ -25,8 +16,10 @@ const ScheduleDoctor = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [doctorList, setDoctorList] = useState([]);
-  const [roomList, setRoomList] = useState([]);
   const [hospitalSchedule, setHospitalSchedule] = useState([]);
+  const [dateTimeRange, setDateTimeRange] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaveDisabled, setIsSaveDisabled] = useState(false);
 
   const fetchDoctorList = async () => {
     try {
@@ -36,6 +29,7 @@ const ScheduleDoctor = () => {
       console.log(error);
     }
   };
+
   const fetchHospitalSchedule = async () => {
     try {
       const response = await axiosConfig.get(
@@ -47,26 +41,21 @@ const ScheduleDoctor = () => {
       console.log(error);
     }
   };
-  // console.log("hospitalSchedule", hospitalSchedule);
-  // console.log("events", events);
-  useEffect(() => {
-    fetchHospitalSchedule();
-  }, []);
-  const fetchRoomList = async () => {
-    try {
-      const response = await axiosConfig.get("/rooms/list-room");
-      setRoomList(response.rooms);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-  console.log(roomList);
+
   useEffect(() => {
     fetchDoctorList();
-    fetchRoomList();
+    fetchHospitalSchedule();
   }, []);
 
-  // convert data from backend to data for calendar
+  useEffect(() => {
+    setIsSaveDisabled(false);
+    setDateTimeRange([]);
+    setSelectedTimeSlot(null);
+    setEvents((prevEvents) =>
+      prevEvents.map((event) => ({ ...event, isSelected: false }))
+    );
+  }, [selectedDoctor]);
+
   const convertScheduleData = (data) => {
     return data?.flatMap((day) =>
       day.timeSlots.map((timeSlot) => ({
@@ -97,35 +86,19 @@ const ScheduleDoctor = () => {
           : event
       )
     );
-    console.log("sddddddddddddd", eventId);
   };
 
-  const handleRoomChange = (eventId, newRoom) => {
-    setEvents((prevEvents) =>
-      prevEvents.map((event) =>
-        event.id === eventId ? { ...event, room: newRoom } : event
-      )
-    );
-  };
-
-  // kiểm tra check lấy được gì
   const handleCheck = async (event) => {
     let shift;
     if (event.title?.toLowerCase().includes("ca sáng")) {
-      shift = "morning"; // Trả về 'morning' nếu là ca sáng
+      shift = "morning";
+    } else if (event.title?.toLowerCase().includes("ca chiều")) {
+      shift = "afternoon";
+    } else if (event.title?.toLowerCase().includes("ca tối")) {
+      shift = "evening";
     }
-    // Kiểm tra nếu title chứa cụm từ "ca chiều"
-    else if (event.title?.toLowerCase().includes("ca chiều")) {
-      shift = "afternoon"; // Trả về 'afternoon' nếu là ca chiều
-    }
-    // Kiểm tra nếu title chứa cụm từ "ca tối"
-    else if (event.title?.toLowerCase().includes("ca tối")) {
-      shift = "evening"; // Trả về 'evening' nếu là ca tối
-    }
-    console.log(shift);
 
     let dateNeedCheck = moment(event.start).format("dddd");
-    // Chuyển đổi ngày thành number index tương ứng (0 - Sunday, 1 - Monday, ...)
     const dayOfWeekMapping = {
       Sunday: 0,
       Monday: 1,
@@ -136,11 +109,9 @@ const ScheduleDoctor = () => {
       Saturday: 6,
     };
 
-    const numberDate = dayOfWeekMapping[dateNeedCheck]; // Lấy chỉ số ngày trong tuần
-    console.log("numberDate", numberDate);
-
+    const numberDate = dayOfWeekMapping[dateNeedCheck];
     const dayOfDate = filterByDayOfWeek(dateTimeRange, numberDate);
-    console.log("dayOfDate", dayOfDate);
+
     try {
       const response = await axiosConfig.post("/doctor-schedules/check", {
         doctorId: selectedDoctor,
@@ -154,8 +125,6 @@ const ScheduleDoctor = () => {
             "Ca làm việc này đã được đăng ký cho bác sĩ! Vui lòng không chọn lại!",
         });
         handleCheckboxChange(event.id);
-      } else if (response.schedule.length === 0) {
-        return;
       }
     } catch (error) {
       console.log(error);
@@ -170,39 +139,27 @@ const ScheduleDoctor = () => {
     );
   };
 
-  console.log("events", events);
-  console.log("............................", roomList);
-  // format data to send to backend
   const formatDataToSend = () => {
-    const groupedDates = groupDatesByDayOfWeek(); // Nhóm các ngày theo thứ trong tuần
-    const selectedEvents = events.filter((event) => event.isSelected); // Lọc các sự kiện đã chọn
-    const errorRoom = selectedEvents.some((event) => !event.room); // Kiểm tra nếu có sự kiện không có phòng
-
-    if (errorRoom) {
-      message.error("Vui lòng chọn phòng cho ca làm việc!");
-      return;
-    }
+    const groupedDates = groupDatesByDayOfWeek();
+    const selectedEvents = events.filter((event) => event.isSelected);
 
     const doctorId = selectedDoctor;
     const startDate = dateTimeRange[0];
     const endDate = dateTimeRange[dateTimeRange.length - 1];
 
-    const schedules = []; // Mảng để lưu lịch làm việc
-
+    const schedules = [];
     selectedEvents.forEach((event) => {
-      const dateOfWeek = dayjs(event.start).format("dddd"); // Ví dụ: Monday, Tuesday, ...
+      const dateOfWeek = dayjs(event.start).format("dddd");
       const shiftType = event.title.includes("Ca sáng")
         ? "morning"
-        : "afternoon"; // Xác định ca sáng/ca chiều
+        : "afternoon";
       const startTime = dayjs(event.start).format("HH:mm");
       const endTime = dayjs(event.end).format("HH:mm");
 
-      // Tìm phần tử đã có trong schedules cho date_of_week
       let schedule = schedules.find(
         (schedule) => schedule.date_of_week === dateOfWeek
       );
 
-      // Nếu chưa có, tạo mới phần tử cho date_of_week
       if (!schedule) {
         schedule = {
           date_of_week: dateOfWeek,
@@ -211,16 +168,13 @@ const ScheduleDoctor = () => {
         schedules.push(schedule);
       }
 
-      // Thêm thời gian ca vào time_slots
       schedule.time_slots.push({
         shift_type: shiftType,
         start: startTime,
         end: endTime,
-        room: event.room,
       });
     });
 
-    // Tạo dữ liệu gửi xuống server theo cấu trúc yêu cầu
     const finalSchedule = [];
     Object.keys(groupedDates).forEach((dayOfWeek) => {
       const scheduleForDay = schedules.find(
@@ -238,16 +192,14 @@ const ScheduleDoctor = () => {
       }
     });
 
-    // Sắp xếp lịch theo ngày tăng dần (date)
     finalSchedule.sort((a, b) =>
       dayjs(a.date).isBefore(dayjs(b.date)) ? -1 : 1
     );
 
-    // Gửi dữ liệu theo định dạng yêu cầu
     const result = {
       schedules: finalSchedule,
       doctorId: doctorId,
-      slotDuration: selectedTimeSlot, // Thời gian mỗi ca làm việc (ví dụ 30 phút)
+      slotDuration: selectedTimeSlot,
       startDate: startDate,
       endDate: endDate,
     };
@@ -255,9 +207,11 @@ const ScheduleDoctor = () => {
     return result;
   };
 
-  // Tiến hành gọi API với `result` để lưu lịch làm việc
   const handleSaveSchedule = async () => {
     const result = formatDataToSend();
+    if (!result) return;
+
+    setIsSaving(true);
     try {
       const response = await axiosConfig.post(
         "doctor-schedules/create-schedule2",
@@ -267,13 +221,18 @@ const ScheduleDoctor = () => {
         notification.success({
           message: "Lưu lịch thành công!",
         });
+        setIsSaveDisabled(true);
       }
     } catch (error) {
       console.log(error);
+      notification.error({
+        message: "Lưu lịch thất bại, vui lòng thử lại!",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Custom component cho từng sự kiện
   const CustomEvent = ({ event }) => {
     const eventStyle = {
       display: "flex",
@@ -291,15 +250,11 @@ const ScheduleDoctor = () => {
           fontWeight: event.isSelected ? "500" : "400",
         }}
       >
-        {/* Header */}
         <div style={eventStyle}>{event.title}</div>
-
-        {/* Nội dung */}
         <div style={eventStyle}>
           <Checkbox
             checked={event.isSelected}
             onChange={() => handleCheckboxChange(event.id)}
-            // onChange={() => handleCheck(event.id)}
             size="small"
             style={{
               marginBottom: "5px",
@@ -309,27 +264,11 @@ const ScheduleDoctor = () => {
           >
             Chọn
           </Checkbox>
-          <Select
-            value={event.room}
-            style={{
-              width: 100,
-              borderWidth: 1,
-              backgroundColor: !event.isSelected ? "#cce0fe" : "",
-            }}
-            onChange={(value) => handleRoomChange(event.id, value)}
-            size="small"
-            disabled={!event.isSelected}
-          >
-            {roomList?.map((room) => (
-              <Option value={room?.id} key={room?.id}>
-                {room?.name}
-              </Option>
-            ))}
-          </Select>
         </div>
       </div>
     );
   };
+
   const eventPropGetter = (event) => {
     return {
       style: {
@@ -337,7 +276,6 @@ const ScheduleDoctor = () => {
         color: event.isSelected ? "#0165ff" : "#000",
         borderRadius: "4px",
         padding: "4px",
-        // borderWidth: "2px",
         borderStyle: "solid",
         borderColor: "#0165ff",
         fontWeight: event.isSelected ? "bold" : "400",
@@ -346,12 +284,11 @@ const ScheduleDoctor = () => {
       },
     };
   };
-  const [dateTimeRange, setDateTimeRange] = useState([]);
+
   const handleRangeChange = (dates, dateStrings) => {
     const start = dayjs(dates?.[0]);
     const end = dayjs(dates?.[1]);
 
-    // lấy tất cả thời gian thuộc startDate và endDate
     const dateArray = [];
     let currentDate = start.clone();
     while (currentDate.isBefore(end) || currentDate.isSame(end, "day")) {
@@ -361,7 +298,6 @@ const ScheduleDoctor = () => {
     setDateTimeRange(dateArray?.map((date) => date.format("YYYY-MM-DD")));
   };
 
-  // nhóm các ngày theo từng ngày trong tuần
   const groupDatesByDayOfWeek = () => {
     const groupedDates = {};
     dateTimeRange?.forEach((date) => {
@@ -376,38 +312,17 @@ const ScheduleDoctor = () => {
 
   function filterByDayOfWeek(dates, dayOfWeek) {
     return dates.filter((date) => {
-      const day = new Date(date).getDay(); // getDay() trả về chỉ số ngày trong tuần (0 - Chủ nhật, 1 - Thứ 2, ... 6 - Thứ 7)
-      return day === dayOfWeek; // Kiểm tra nếu ngày là thứ Hai (1)
+      const day = new Date(date).getDay();
+      return day === dayOfWeek;
     });
   }
-
-  console.log(filterByDayOfWeek(dateTimeRange, 2));
-  // {
-  //   "date": "2024-12-12",
-  //   "date_of_week": "Thursday",
-  //   "time_slots": [
-  //     {
-  //       "shift_type": "morning",
-  //       "start": "07:00",
-  //       "end": "11:30"
-  //     }
-  // ]
-  // gán date và time_slots cho từng ngày
-  const assignDateAndTimeSlotsToDays = (groupedDates, doctorSchedule) => {
-    const assignedSchedules = {};
-  };
-  console.log(groupDatesByDayOfWeek());
-  // console.log(dateTimeRange);
 
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "#fff",
-        padding: "20px",
-        borderRadius: "10px",
-        gap: 10,
+        padding: 24,
+        background: "#fff",
+        minHeight: "100vh",
       }}
     >
       <h2 style={{ textAlign: "center", textTransform: "uppercase" }}>
@@ -438,7 +353,6 @@ const ScheduleDoctor = () => {
               }}
             >
               Bác sĩ
-              <PiWarningCircleLight style={{ color: "red" }} />
             </label>
             <Select
               style={{ borderWidth: 1, borderColor: "#fff" }}
@@ -466,7 +380,6 @@ const ScheduleDoctor = () => {
               }}
             >
               Thời gian xếp lịch
-              <PiWarningCircleLight style={{ color: "red" }} />
             </label>
             <RangePicker
               format="DD-MM-YYYY"
@@ -475,9 +388,19 @@ const ScheduleDoctor = () => {
               style={{ borderWidth: 1 }}
               disabled={!selectedDoctor}
               size="large"
+              value={
+                dateTimeRange.length
+                  ? [
+                      dayjs(dateTimeRange[0], "YYYY-MM-DD"),
+                      dayjs(
+                        dateTimeRange[dateTimeRange.length - 1],
+                        "YYYY-MM-DD"
+                      ),
+                    ]
+                  : null
+              }
             />
           </div>
-
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <label
               style={{
@@ -489,9 +412,7 @@ const ScheduleDoctor = () => {
               }}
             >
               Thời gian cuộc hẹn khám
-              <PiWarningCircleLight style={{ color: "red" }} />
             </label>
-
             <Select
               style={{ borderWidth: 1, borderColor: "#fff" }}
               value={selectedTimeSlot}
@@ -500,7 +421,7 @@ const ScheduleDoctor = () => {
               disabled={!selectedDoctor || !dateTimeRange?.length}
               placeholder="Chọn thời gian cuộc hẹn khám"
             >
-              <Option value={30}>30 phút </Option>
+              <Option value={30}>30 phút</Option>
               <Option value={45}>45 phút</Option>
               <Option value={60}>60 phút</Option>
             </Select>
@@ -510,8 +431,13 @@ const ScheduleDoctor = () => {
             style={{ display: "flex", width: "100%" }}
             onClick={handleSaveSchedule}
             disabled={
-              !selectedDoctor || !dateTimeRange?.length || !selectedTimeSlot
+              isSaveDisabled ||
+              isSaving ||
+              !selectedDoctor ||
+              !dateTimeRange?.length ||
+              !selectedTimeSlot
             }
+            loading={isSaving}
           >
             Lưu lịch
           </Button>
@@ -537,7 +463,7 @@ const ScheduleDoctor = () => {
             max={new Date(2024, 10, 30, 21, 0)}
             toolbar={false}
             components={{
-              event: CustomEvent, // Gắn custom event component
+              event: CustomEvent,
             }}
             defaultViewDate={new Date()}
             onSelectEvent={(event) => {
@@ -546,7 +472,7 @@ const ScheduleDoctor = () => {
             eventPropGetter={eventPropGetter}
             formats={{
               dayFormat: (date, culture, localizer) =>
-                localizer.format(date, "dddd"), // Hiển thị tên ngày bằng tiếng Việt
+                localizer.format(date, "dddd"),
             }}
           />
         </div>

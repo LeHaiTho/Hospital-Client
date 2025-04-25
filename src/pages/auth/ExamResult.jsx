@@ -10,20 +10,20 @@ import {
   Upload,
 } from "antd";
 import { Form, Input, Button, Descriptions, Card, message, Modal } from "antd";
+import { CheckCircleOutlined } from "@ant-design/icons";
 import axiosConfig from "../../apis/axiosConfig";
 import moment from "moment";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 
 const ExamResult = () => {
-  const [data, setData] = useState(""); // Biến để lưu dữ liệu quét được
-  const [error, setError] = useState(null); // Biến để lưu lỗi (nếu có)
+  const [data, setData] = useState("");
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [customerInfo, setCustomerInfo] = useState(null);
   const [form] = Form.useForm();
 
   const { Option } = Select;
-  // Biến để lưu dữ liệu nhập vào form
   const [formData, setFormData] = useState({
     appointment: {
       id: "",
@@ -55,11 +55,9 @@ const ExamResult = () => {
     imagingDiagnostics: [],
   });
 
-  console.log(formData);
   const handleScan = async (result) => {
     try {
       setData(result.text);
-
       try {
         const res = await axiosConfig.get(
           `/appointments/get-appointment-by-id-by-hospital/${result.text}`
@@ -70,9 +68,6 @@ const ExamResult = () => {
           ...formData,
           appointment: { id: res?.appointmentDetail?.id },
         });
-        // if (res.status === 200) {
-        //   message.success("Check-in thành công");
-        // }
       } catch (error) {
         console.log(error);
         if (error.response.status === 404) {
@@ -83,6 +78,7 @@ const ExamResult = () => {
       console.log(error);
     }
   };
+
   const handleCheckIn = async () => {
     if (!data) {
       message.error("Vui lòng nhập mã barcode");
@@ -113,14 +109,12 @@ const ExamResult = () => {
 
   const handleError = (err) => {
     setError(err?.message || "Có lỗi xảy ra");
-
     console.error(err);
   };
 
   const onFinish = async () => {
     const formDataToSend = new FormData();
 
-    // Append the other data as a JSON string
     formDataToSend.append(
       "data",
       JSON.stringify({
@@ -130,58 +124,63 @@ const ExamResult = () => {
         prescriptions: formData.prescriptions,
         imagingDiagnostics: formData.imagingDiagnostics.map((diag) => ({
           description: diag.description,
-          fileType: diag.fileType, // Ensure you have this field in your state
+          fileType: diag.fileType,
         })),
       })
     );
 
-    // Append each file under the field name "files"
     formData.imagingDiagnostics.forEach((diag) => {
-      formDataToSend.append("files", diag.file); // Use "files" as the field name
+      formDataToSend.append("files", diag.file);
     });
 
-    console.log(formDataToSend.get("data"));
-    console.log(formDataToSend.get("files"));
-    // Call API
     try {
       const res = await axiosConfig.post(
         "medical-histories/receive-medical-history",
         formDataToSend,
         {
           headers: {
-            "Content-Type": "multipart/form-data", // Ensure the correct content type
+            "Content-Type": "multipart/form-data",
           },
         }
       );
       if (res.status === 200) {
-        notification.success("Lưu kết quả khám thành công");
+        notification.success({
+          message: "Thành công",
+          description: "Kết quả khám đã được lưu thành công!",
+          placement: "topRight",
+          duration: 3,
+          icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
+        });
       }
       form.resetFields();
       setFormData({
         ...formData,
         imagingDiagnostics: [],
       });
-      console.log(res);
     } catch (error) {
       console.log(error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể lưu kết quả khám. Vui lòng thử lại!",
+        placement: "topRight",
+        duration: 3,
+      });
     }
   };
-  console.log(customerInfo?.id);
+
   const handleFileChange = (event) => {
     const uploadedFiles = Array.from(event.target.files);
-
     const newDiagnostics = uploadedFiles.map((file) => ({
       file,
       description: "",
       fileType: "",
     }));
-
     setFormData((prev) => ({
       ...prev,
       imagingDiagnostics: [...prev.imagingDiagnostics, ...newDiagnostics],
     }));
   };
-  console.log(formData);
+
   const handleDiagnosticChange = (index, key, value) => {
     const updatedDiagnostics = [...formData.imagingDiagnostics];
     updatedDiagnostics[index][key] = value;
@@ -197,6 +196,7 @@ const ExamResult = () => {
       imagingDiagnostics: prev.imagingDiagnostics.filter((_, i) => i !== index),
     }));
   };
+
   return (
     <div
       style={{
@@ -224,7 +224,6 @@ const ExamResult = () => {
         </Button>
       </Card>
 
-      {/* Modal Quét Mã */}
       <Modal
         title="Quét Mã Barcode"
         open={isModalVisible}
@@ -237,10 +236,10 @@ const ExamResult = () => {
               handleScan(result);
               return;
             }
-            // if (err) handleError(err);
           }}
         />
       </Modal>
+
       {customerInfo && (
         <Card title="Thông tin khách hàng" style={{ marginBottom: "20px" }}>
           <Descriptions bordered>
@@ -260,9 +259,10 @@ const ExamResult = () => {
           </Descriptions>
         </Card>
       )}
+
       {customerInfo && (
         <Card title="Nhập Kết Quả Khám" style={{ width: "auto" }}>
-          <Form layout="vertical" onFinish={onFinish}>
+          <Form layout="vertical" onFinish={onFinish} form={form}>
             <Row gutter={16}>
               <Col span={6}>
                 <Form.Item
@@ -366,7 +366,21 @@ const ExamResult = () => {
                     { required: true, message: "Vui lòng nhập kết quả khám" },
                   ]}
                 >
-                  <Input.TextArea rows={2} />
+                  <Input.TextArea
+                    rows={2}
+                    value={formData.examResults[0].description}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        examResults: [
+                          {
+                            ...formData.examResults[0],
+                            description: e.target.value,
+                          },
+                        ],
+                      });
+                    }}
+                  />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -377,18 +391,46 @@ const ExamResult = () => {
                     { required: true, message: "Vui lòng nhập kết luận" },
                   ]}
                 >
-                  <Input.TextArea rows={2} />
+                  <Input.TextArea
+                    rows={2}
+                    value={formData.examResults[0].findings}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        examResults: [
+                          {
+                            ...formData.examResults[0],
+                            findings: e.target.value,
+                          },
+                        ],
+                      });
+                    }}
+                  />
                 </Form.Item>
               </Col>
             </Row>
+
             <Form.Item
               label="Chỉ định"
               name="recommendation"
               rules={[{ required: true, message: "Vui lòng nhập chỉ định" }]}
             >
-              <Input.TextArea />
+              <Input.TextArea
+                value={formData.examResults[0].recommendation}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    examResults: [
+                      {
+                        ...formData.examResults[0],
+                        recommendation: e.target.value,
+                      },
+                    ],
+                  });
+                }}
+              />
             </Form.Item>
-            {/* medicine */}
+
             <Form.Item label="Đơn thuốc">
               {formData.prescriptions.items.map((item, index) => (
                 <div
@@ -502,7 +544,7 @@ const ExamResult = () => {
                 Thêm thuốc
               </Button>
             </Form.Item>
-            {/* image Imaging Diagnostics */}
+
             <Form.Item>
               <input
                 type="file"
@@ -515,6 +557,7 @@ const ExamResult = () => {
                   display: "flex",
                   flexDirection: "row",
                   justifyContent: "space-between",
+                  flexWrap: "wrap",
                 }}
               >
                 {formData.imagingDiagnostics.map((diag, index) => (
@@ -526,19 +569,20 @@ const ExamResult = () => {
                       justifyContent: "center",
                       display: "flex",
                       gap: 10,
+                      width: "45%",
                     }}
                   >
-                    <p>File: {diag.file.name}</p>
+                    <p style={{ width: "100px" }}>File: {diag.file.name}</p>
                     <input
                       style={{
-                        width: "auto",
+                        width: "200px",
                         padding: 8,
                         borderRadius: 10,
                         color: "black",
                         border: "1px solid #ccc",
                       }}
                       type="text"
-                      placeholder="mô tả"
+                      placeholder="Mô tả"
                       value={diag.description}
                       onChange={(e) =>
                         handleDiagnosticChange(
@@ -548,7 +592,6 @@ const ExamResult = () => {
                         )
                       }
                     />
-
                     <Button
                       type="text"
                       onClick={() => handleRemoveDiagnostic(index)}

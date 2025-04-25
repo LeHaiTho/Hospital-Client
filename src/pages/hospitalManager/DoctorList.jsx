@@ -1,23 +1,11 @@
-import React, { useRef, useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  UserOutlined,
   SearchOutlined,
   PlusOutlined,
-  DownOutlined,
   EditOutlined,
-  DeleteOutlined,
-  ExclamationCircleFilled,
-  CustomerServiceOutlined,
-  RadiusUpleftOutlined,
-  RadiusUprightOutlined,
-  RadiusBottomleftOutlined,
-  RadiusBottomrightOutlined,
-  TwitterOutlined,
-  CalendarTwoTone,
-  CalendarOutlined,
-  PhoneOutlined,
   CloseCircleOutlined,
-  ReloadOutlined,
+  UploadOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import NotificationComponent from "../../utils/NotificationComponent";
 import { GrRefresh } from "react-icons/gr";
@@ -27,63 +15,30 @@ import {
   Button,
   Select,
   Table,
-  Divider,
   Tag,
   Dropdown,
   Modal,
-  Typography,
   Form,
-  Radio,
   Upload,
   DatePicker,
   Avatar,
-  notification,
-  Tabs,
   Row,
   Col,
-  Alert,
-  Spin,
 } from "antd";
 import { IoIosMore } from "react-icons/io";
-import { UploadOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import { MdOutlineMailOutline } from "react-icons/md";
-import { LiaUserNurseSolid } from "react-icons/lia";
+import { MdMarkEmailRead } from "react-icons/md";
 import "../../index.css";
 import axiosConfig from "../../apis/axiosConfig";
-import dayjs from "dayjs";
-import { GoDotFill } from "react-icons/go";
 import moment from "moment";
-import { MdMarkEmailRead } from "react-icons/md";
 import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-const { Search } = Input;
-const { confirm } = Modal;
-const { Option } = Select;
-const { TextArea } = Input;
-const { TabPane } = Tabs;
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
+const { Option } = Select;
+const { TextArea } = Input;
+
 const handleChange = (value) => {
   console.log(`selected ${value}`);
-};
-
-const showDeleteConfirm = () => {
-  confirm({
-    title: "Bạn có chắc sẽ xóa tài khoản người dùng này?",
-    icon: <ExclamationCircleFilled />,
-    okText: "Chấp nhận",
-    okType: "primary",
-    cancelText: "Hủy",
-
-    onOk() {
-      console.log("OK");
-      NotificationComponent("success", "Xóa thành công", "bottomRight");
-    },
-    onCancel() {
-      console.log("Cancel");
-    },
-  });
 };
 
 const DoctorList = () => {
@@ -91,87 +46,103 @@ const DoctorList = () => {
   const [form] = Form.useForm();
   const [specialties, setSpecialties] = useState([]);
   const [doctorList, setDoctorList] = useState([]);
-  const [doctorDetail, setDoctorDetail] = useState();
+  const [doctorDetail, setDoctorDetail] = useState(null);
   const [editDoctor, setEditDoctor] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [image, setImage] = useState();
+  const [fileList, setFileList] = useState([]);
   const [searchData, setSearchData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
-  // Tìm kiếm bác sĩ
-
-  console.log("doctorDetail", doctorDetail);
-  // get doctor list
+  // Get doctor list
   const getDoctorList = async () => {
-    const response = await axiosConfig.get("/doctors/list");
-    setDoctorList(response.doctorList);
+    try {
+      const response = await axiosConfig.get("/doctors/list");
+      setDoctorList(response.doctorList);
+      setSearchData(response.doctorList);
+    } catch (error) {
+      console.error("Error fetching doctor list:", error);
+    }
   };
+
   useEffect(() => {
     getDoctorList();
   }, []);
-  console.log("doctorList", doctorList);
-
+  console.log(doctorList);
+  // Search doctors
   const handleSearch = (event) => {
-    const value = event.target.value; // Lấy giá trị từ Input
-    setSearch(value); // Cập nhật giá trị input
-
+    const value = event.target.value;
+    setSearch(value);
     if (value.trim() === "") {
-      setSearchData(doctorList); // Nếu input trống, hiển thị danh sách gốc
+      setSearchData(doctorList);
     } else {
-      // Lọc danh sách
-      const searchDoctor = doctorList.filter((doctor) => {
-        return (
-          doctor.fullname.toLowerCase().includes(value.toLowerCase()) ||
-          doctor.email.toLowerCase().includes(value.toLowerCase()) ||
-          doctor.phone.toLowerCase().includes(value.toLowerCase())
-        );
-      });
-      setSearchData(searchDoctor); // Cập nhật danh sách hiển thị
+      const searchDoctor = doctorList.filter((doctor) =>
+        [doctor.fullname, doctor.email, doctor.phone].some((field) =>
+          field?.toLowerCase().includes(value.toLowerCase())
+        )
+      );
+      setSearchData(searchDoctor);
     }
   };
-  // check license code
+
+  // Check license code
   const checkLicenseCode = async (licenseCode) => {
-    const response = await axiosConfig.get(
-      `/doctors/get-doctor-by-license-code?licenseCode=${licenseCode}`
-    );
-    if (response.doctorDetail) {
-      form.setFieldsValue({
-        fullname: response.doctorDetail.fullname,
-        phone: response.doctorDetail.phone,
-        email: response.doctorDetail.email,
-        description: response.doctorDetail.description,
-        gender: response.doctorDetail.gender,
-        birthday: response.doctorDetail.birthday
-          ? moment(response.doctorDetail.birthday)
-          : null,
-        image: response.doctorDetail.avatar,
-      });
-      setDoctorDetail(response.doctorDetail);
-      setImage(response.doctorDetail.avatar);
-      console.log(response.doctorDetail.avatar);
-    } else {
-      form.setFieldsValue({
-        fullname: "",
-        phone: "",
-        email: "",
-        description: "",
-        gender: "",
-        birthday: "",
-        image: "",
-      });
-      setDoctorDetail(null);
-      setImage(null);
+    try {
+      const response = await axiosConfig.get(
+        `/doctors/get-doctor-by-license-code?licenseCode=${licenseCode}`
+      );
+      if (response.doctorDetail) {
+        form.setFieldsValue({
+          fullname: response.doctorDetail.fullname,
+          phone: response.doctorDetail.phone,
+          email: response.doctorDetail.email,
+          description: response.doctorDetail.description,
+          gender: response.doctorDetail.gender,
+          birthday: response.doctorDetail.birthday
+            ? moment(response.doctorDetail.birthday, "YYYY-MM-DD")
+            : null,
+        });
+        setDoctorDetail(response.doctorDetail);
+        setFileList(
+          response.doctorDetail.avatar
+            ? [
+                {
+                  uid: "-1",
+                  name: "avatar",
+                  status: "done",
+                  url: `http://localhost:3000${response.doctorDetail.avatar}`,
+                },
+              ]
+            : []
+        );
+      } else {
+        form.setFieldsValue({
+          fullname: "",
+          phone: "",
+          email: "",
+          description: "",
+          gender: undefined,
+          birthday: null,
+        });
+        setDoctorDetail(null);
+        setFileList([]);
+      }
+    } catch (error) {
+      console.error("Error checking license code:", error);
     }
   };
-  // get specialties of hospital
-  console.log("image", image);
+
+  // Get specialties of hospital
   useEffect(() => {
     const getSpecialties = async () => {
-      const response = await axiosConfig.get(
-        "/hospital-specialties/list-specialty-of-hospital"
-      );
-      setSpecialties(response.specialtiesOfSystem);
+      try {
+        const response = await axiosConfig.get(
+          "/hospital-specialties/list-specialty-of-hospital"
+        );
+        setSpecialties(response.specialtiesOfSystem);
+      } catch (error) {
+        console.error("Error fetching specialties:", error);
+      }
     };
     getSpecialties();
   }, []);
@@ -181,84 +152,111 @@ const DoctorList = () => {
     setEditMode(false);
     setEditDoctor(null);
     setDoctorDetail(null);
+    setFileList([]);
+    form.resetFields();
   };
 
   const showEditModal = (doctor) => {
     setVisible(true);
     setEditMode(true);
+    setEditDoctor(doctor);
+    setDoctorDetail(null);
     form.setFieldsValue({
+      licenseCode: doctor.licenseCode,
       fullname: doctor.fullname,
       phone: doctor.phone,
       email: doctor.email,
       description: doctor.description,
       consultation_fee: doctor.consultation_fee[0],
       gender: doctor.gender,
-      birthday: doctor.birthday ? moment(doctor.birthday) : null,
-      image: doctor.avatar,
-      licenseCode: doctor.licenseCode,
+      birthday: doctor.birthday ? moment(doctor.birthday, "YYYY-MM-DD") : null,
       specialty: doctor.specialties?.map((item) => item.id),
     });
-    setImage(doctor.avatar);
-    setEditDoctor(doctor);
-    // setDoctorDetail(doctor);
+    setFileList(
+      doctor.avatar
+        ? [
+            {
+              uid: "-1",
+              name: "avatar",
+              status: "done",
+              url: `http://localhost:3000${doctor.avatar}`,
+            },
+          ]
+        : []
+    );
   };
 
   const handleCancel = () => {
     form.resetFields();
     setVisible(false);
+    setFileList([]);
+    setEditDoctor(null);
+    setEditMode(false);
+    setDoctorDetail(null);
   };
 
-  const onChangeImage = ({ fileList }) => {
-    setImage(fileList[0]);
+  const onChangeImage = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
   };
-  console.log(image);
 
   const handleFinish = async (values) => {
     try {
+      setLoading(true);
       const formData = new FormData();
-      formData.append("image", image?.originFileObj);
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        formData.append("image", fileList[0].originFileObj);
+      }
       formData.append("fullname", values.fullname);
       formData.append("phone", values.phone);
       formData.append("email", values.email);
       formData.append("gender", values.gender);
       formData.append("licenseCode", values.licenseCode);
-      formData.append("specialty", values.specialty);
-      formData.append("birthday", values.birthday);
-      formData.append("description", values.description);
-      formData.append("consultation_fee", values.consultation_fee);
-      console.log(formData.get("image"));
-      console.log(formData.get("fullname"));
-      console.log(formData.get("phone"));
-      console.log(formData.get("email"));
-      console.log(formData.get("gender"));
-      console.log(formData.get("licenseCode"));
-      console.log(formData.get("specialty"));
-      console.log(formData.get("birthday"));
-      console.log(formData.get("description"));
-      console.log(formData.get("consultation_fee"));
-      const response = await axiosConfig.post(
-        "/doctors/create-doctor",
-        formData
+      formData.append("specialty", values.specialty.join(","));
+      formData.append(
+        "birthday",
+        values.birthday ? values.birthday.format("YYYY-MM-DD") : ""
       );
+      formData.append("description", values.description || "");
+      formData.append("consultation_fee", values.consultation_fee);
+
+      const url = editMode
+        ? `/doctors/update-doctor/${editDoctor.id}`
+        : "/doctors/create-doctor";
+      const method = editMode ? "put" : "post";
+      const response = await axiosConfig({
+        method,
+        url,
+        data: formData,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       form.resetFields();
       setVisible(false);
-      console.log(response);
+      setFileList([]);
       NotificationComponent(
         "success",
         editMode ? "Cập nhật bác sĩ thành công" : "Thêm bác sĩ thành công"
       );
       getDoctorList();
     } catch (error) {
-      console.log(error);
+      console.error("Error saving doctor:", error);
+      NotificationComponent(
+        "error",
+        error.response?.data?.message || "Lỗi khi lưu thông tin bác sĩ"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleOk = () => {
     form.submit();
   };
+
   const handleEditDoctor = (doctor) => {
     showEditModal(doctor);
   };
+
   const columns = [
     {
       title: "",
@@ -271,13 +269,11 @@ const DoctorList = () => {
           src={
             avatar && avatar.trim() !== ""
               ? `http://localhost:3000${avatar}`
-              : (avatar =
-                  "https://w7.pngwing.com/pngs/205/731/png-transparent-default-avatar-thumbnail.png")
+              : "https://w7.pngwing.com/pngs/205/731/png-transparent-default-avatar-thumbnail.png"
           }
         />
       ),
     },
-
     {
       title: "Họ và tên",
       dataIndex: "fullname",
@@ -294,12 +290,10 @@ const DoctorList = () => {
         </p>
       ),
     },
-
     {
       title: "Chuyên khoa",
       dataIndex: "specialties",
       key: "specialties",
-
       render: (specialties) => (
         <p style={{ color: "#000" }}>
           {specialties.map((item) => item.name).join(", ")}
@@ -310,7 +304,6 @@ const DoctorList = () => {
       title: "Email",
       dataIndex: "email",
       key: "email",
-
       render: (email) => (
         <p
           style={{
@@ -343,20 +336,19 @@ const DoctorList = () => {
     },
     {
       title: "Trạng thái",
-      dataIndex: "isActive",
-      key: "isActive",
-      render: (isActive) =>
-        isActive === true ? (
+      dataIndex: "isActivated",
+      key: "isActivated",
+      render: (isActivated, isDeleted) =>
+        isActivated && isDeleted ? (
           <Tag color="success" bordered={false} icon={<CheckCircleOutlined />}>
             Đang làm việc
           </Tag>
         ) : (
           <Tag color="error" bordered={false} icon={<CloseCircleOutlined />}>
-            Đã nghỉ việc
+            Tạm khóa
           </Tag>
         ),
     },
-
     {
       title: "",
       key: "action",
@@ -385,97 +377,80 @@ const DoctorList = () => {
       },
     },
   ];
-  const exportToExcel = (data) => {
-    // Tạo dữ liệu để xuất
-    const excelData = data.map((record) => ({
-      "Họ và tên": record.fullname,
-      "Chuyên khoa": record.specialties.map((item) => item.name).join(", "),
-      Email: record.email,
-      "Số điện thoại": record.phone,
-      "Giá khám": record.consultation_fee[0]
-        ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
-        : "",
-      "Trạng thái": record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
-    }));
 
-    // Tạo một worksheet
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
+  // const exportToExcel = (data) => {
+  //   const excelData = data.map((record) => ({
+  //     "Họ và tên": record.fullname,
+  //     "Chuyên khoa": record.specialties.map((item) => item.name).join(", "),
+  //     Email: record.email,
+  //     "Số điện thoại": record.phone,
+  //     "Giá khám": record.consultation_fee[0]
+  //       ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
+  //       : "",
+  //     "Trạng thái": record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
+  //   }));
+  //   const worksheet = XLSX.utils.json_to_sheet(excelData);
+  //   const workbook = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách bác sĩ");
+  //   XLSX.writeFile(workbook, "DanhSachBacSi.xlsx");
+  // };
 
-    // Tạo một workbook
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách bác sĩ");
+  // const exportToPDF = (data) => {
+  //   const doc = new jsPDF();
+  //   doc.setFontSize(18);
+  //   doc.text("DANH SÁCH BÁC SĨ", 14, 20);
+  //   doc.setFontSize(12);
+  //   doc.text(`Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`, 14, 30);
+  //   const tableData = data.map((record, index) => [
+  //     index + 1,
+  //     record.fullname,
+  //     record.specialties.map((item) => item.name).join(", "),
+  //     record.email,
+  //     record.phone,
+  //     record.consultation_fee[0]
+  //       ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
+  //       : "",
+  //     record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
+  //   ]);
+  //   doc.autoTable({
+  //     head: [
+  //       [
+  //         "STT",
+  //         "Họ và tên",
+  //         "Chuyên khoa",
+  //         "Email",
+  //         "Số điện thoại",
+  //         "Giá khám",
+  //         "Trạng thái",
+  //       ],
+  //     ],
+  //     body: tableData,
+  //     startY: 40,
+  //     theme: "grid",
+  //     headStyles: {
+  //       fillColor: [0, 123, 255],
+  //       textColor: [255, 255, 255],
+  //       fontSize: 12,
+  //     },
+  //     bodyStyles: {
+  //       fontSize: 10,
+  //     },
+  //     columnStyles: {
+  //       0: { cellWidth: 10 },
+  //       1: { cellWidth: 40 },
+  //       2: { cellWidth: 50 },
+  //       3: { cellWidth: 50 },
+  //       4: { cellWidth: 30 },
+  //       5: { cellWidth: 30 },
+  //       6: { cellWidth: 30 },
+  //     },
+  //   });
+  //   const pageCount = doc.internal.getNumberOfPages();
+  //   doc.setFontSize(10);
+  //   doc.text(`Trang ${pageCount}`, 180, 290);
+  //   doc.save("DanhSachBacSi.pdf");
+  // };
 
-    // Xuất file
-    XLSX.writeFile(workbook, "DanhSachBacSi.xlsx");
-  };
-
-  const exportToPDF = (data) => {
-    const doc = new jsPDF();
-
-    // Tiêu đề
-    doc.setFontSize(18);
-    doc.text("DANH SÁCH BÁC SĨ", 14, 20);
-
-    // Ngày xuất file
-    doc.setFontSize(12);
-    doc.text(`Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`, 14, 30);
-
-    // Chuẩn bị dữ liệu bảng
-    const tableData = data.map((record, index) => [
-      index + 1,
-      record.fullname,
-      record.specialties.map((item) => item.name).join(", "),
-      record.email,
-      record.phone,
-      record.consultation_fee[0]
-        ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
-        : "",
-      record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
-    ]);
-
-    // Cấu hình bảng
-    doc.autoTable({
-      head: [
-        [
-          "STT",
-          "Họ và tên",
-          "Chuyên khoa",
-          "Email",
-          "Số điện thoại",
-          "Giá khám",
-          "Trạng thái",
-        ],
-      ],
-      body: tableData,
-      startY: 40,
-      theme: "grid",
-      headStyles: {
-        fillColor: [0, 123, 255],
-        textColor: [255, 255, 255],
-        fontSize: 12,
-      },
-      bodyStyles: {
-        fontSize: 10,
-      },
-      columnStyles: {
-        0: { cellWidth: 10 }, // STT
-        1: { cellWidth: 40 }, // Họ và tên
-        2: { cellWidth: 50 }, // Chuyên khoa
-        3: { cellWidth: 50 }, // Email
-        4: { cellWidth: 30 }, // Số điện thoại
-        5: { cellWidth: 30 }, // Giá khám
-        6: { cellWidth: 30 }, // Trạng thái
-      },
-    });
-
-    // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    doc.setFontSize(10);
-    doc.text(`Trang ${pageCount}`, 180, 290); // Góc dưới cùng bên phải
-
-    // Xuất file PDF
-    doc.save("DanhSachBacSi.pdf");
-  };
   return (
     <Space
       direction="vertical"
@@ -495,7 +470,7 @@ const DoctorList = () => {
       >
         <Space size="middle">
           <Input
-            placeholder="Họ và tên, địa chỉ email, ... "
+            placeholder="Họ và tên, địa chỉ email, ..."
             suffix={<SearchOutlined />}
             style={{
               width: 300,
@@ -507,23 +482,12 @@ const DoctorList = () => {
           />
           <Select
             defaultValue="Tất cả"
-            style={{
-              width: 120,
-            }}
+            style={{ width: 120 }}
             onChange={handleChange}
             options={[
-              {
-                value: "all",
-                label: "Trạng thái",
-              },
-              {
-                value: "active",
-                label: "Hoạt động",
-              },
-              {
-                value: "lock",
-                label: "Tạm khóa",
-              },
+              { value: "all", label: "Trạng thái" },
+              { value: "active", label: "Hoạt động" },
+              { value: "lock", label: "Tạm khóa" },
             ]}
           />
           <Button
@@ -533,30 +497,31 @@ const DoctorList = () => {
               backgroundColor: "#DBEAFE",
               color: "#0165ff",
             }}
+            onClick={() => {
+              setSearch("");
+              setSearchData(doctorList);
+            }}
           >
             Làm mới
           </Button>
-          <Button type="primary" onClick={() => exportToExcel(doctorList)}>
+          {/* <Button type="primary" onClick={() => exportToExcel(searchData)}>
             Xuất Excel
           </Button>
-          <Button type="primary" onClick={() => exportToPDF(doctorList)}>
+          <Button type="primary" onClick={() => exportToPDF(searchData)}>
             Xuất PDF
-          </Button>
+          </Button> */}
         </Space>
-
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button
-            style={{
-              backgroundColor: "#0165ff",
-              color: "#fff",
-              border: "none",
-              fontWeight: "500",
-            }}
-            onClick={showAddModal}
-          >
-            Thêm mới
-          </Button>
-        </div>
+        <Button
+          style={{
+            backgroundColor: "#0165ff",
+            color: "#fff",
+            border: "none",
+            fontWeight: "500",
+          }}
+          onClick={showAddModal}
+        >
+          Thêm mới
+        </Button>
       </Space>
 
       <Modal
@@ -568,13 +533,10 @@ const DoctorList = () => {
         cancelText="Hủy"
         maskClosable={false}
         centered
-        style={{
-          margin: "5px auto",
-        }}
+        style={{ margin: "5px auto" }}
+        confirmLoading={loading}
       >
         <Form form={form} layout="vertical" onFinish={handleFinish}>
-          {/* Thông tin cơ bản */}
-
           <Form.Item
             name="licenseCode"
             label="Mã chứng chỉ hành nghề"
@@ -582,6 +544,7 @@ const DoctorList = () => {
           >
             <Input
               placeholder="Nhập mã chứng chỉ"
+              disabled={editMode}
               onBlur={
                 editMode ? undefined : (e) => checkLicenseCode(e.target.value)
               }
@@ -611,20 +574,28 @@ const DoctorList = () => {
               >
                 <Input
                   placeholder="Nhập tên bác sĩ"
-                  disabled={doctorDetail ? true : false}
-                  style={{
-                    color: "#000",
-                  }}
+                  disabled={doctorDetail}
+                  style={{ color: "#000" }}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="avatar" label="Ảnh đại diện">
+              <Form.Item
+                name="avatar"
+                label="Ảnh đại diện"
+                rules={[
+                  {
+                    required: !editMode,
+                    message: "Vui lòng chọn ảnh đại diện",
+                  },
+                ]}
+              >
                 <Upload
+                  listType="picture"
+                  fileList={fileList}
                   onChange={onChangeImage}
                   maxCount={1}
                   accept=".jpg,.png,.jpeg"
-                  fileList={image ? [image] : []}
                   beforeUpload={() => false}
                 >
                   <Button icon={<UploadOutlined />}>Upload</Button>
@@ -632,7 +603,6 @@ const DoctorList = () => {
               </Form.Item>
             </Col>
           </Row>
-
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -644,10 +614,8 @@ const DoctorList = () => {
               >
                 <Input
                   placeholder="Nhập số điện thoại"
-                  disabled={doctorDetail ? true : false}
-                  style={{
-                    color: "#000",
-                  }}
+                  disabled={doctorDetail}
+                  style={{ color: "#000" }}
                 />
               </Form.Item>
             </Col>
@@ -659,16 +627,13 @@ const DoctorList = () => {
               >
                 <Input
                   placeholder="Nhập email bác sĩ"
-                  disabled={doctorDetail ? true : false}
-                  style={{
-                    color: "#000",
-                  }}
+                  disabled={doctorDetail}
+                  style={{ color: "#000" }}
                 />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
-            {/* Ngày sinh */}
             <Col span={12}>
               <Form.Item
                 name="birthday"
@@ -676,24 +641,21 @@ const DoctorList = () => {
                 rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
               >
                 <DatePicker
-                  disabled={doctorDetail ? true : false}
+                  disabled={doctorDetail}
                   placeholder="Chọn ngày sinh"
                   format="DD/MM/YYYY"
-                  style={{
-                    width: "100%",
-                    color: "#000",
-                  }}
+                  style={{ width: "100%", color: "#000" }}
+                  defaultValue={form.getFieldValue("birthday") || null}
                 />
               </Form.Item>
             </Col>
-            {/* Giới tính */}
             <Col span={12}>
               <Form.Item
                 name="gender"
                 label="Giới tính"
                 rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
               >
-                <Select disabled={doctorDetail ? true : false}>
+                <Select disabled={doctorDetail}>
                   <Option value={true}>Nam</Option>
                   <Option value={false}>Nữ</Option>
                 </Select>
@@ -708,9 +670,7 @@ const DoctorList = () => {
             <Input
               type="number"
               placeholder="Nhập giá khám"
-              style={{
-                color: "#000",
-              }}
+              style={{ color: "#000" }}
             />
           </Form.Item>
           <Form.Item
@@ -718,13 +678,11 @@ const DoctorList = () => {
             label="Mô tả"
             rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
           >
-            <Input.TextArea
+            <TextArea
               placeholder="Nhập mô tả bác sĩ"
               rows={4}
-              disabled={doctorDetail ? true : false}
-              style={{
-                color: "#000",
-              }}
+              disabled={doctorDetail}
+              style={{ color: "#000" }}
             />
           </Form.Item>
           <Form.Item
@@ -735,18 +693,16 @@ const DoctorList = () => {
             <Select
               mode="multiple"
               showSearch
-              placeholder="Select a person"
+              placeholder="Chọn chuyên khoa"
               filterOption={(input, option) =>
                 (option?.label ?? "")
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
-              options={specialties.map((item, i) => {
-                return {
-                  value: item.id,
-                  label: item.name,
-                };
-              })}
+              options={specialties.map((item) => ({
+                value: item.id,
+                label: item.name,
+              }))}
             />
           </Form.Item>
         </Form>
@@ -754,13 +710,11 @@ const DoctorList = () => {
       <Table
         size="small"
         columns={columns}
-        dataSource={doctorList.map((doctor) => {
-          return {
-            ...doctor,
-            key: doctor.id,
-            specialties: doctor.specialties,
-          };
-        })}
+        dataSource={searchData.map((doctor) => ({
+          ...doctor,
+          key: doctor.id,
+          specialties: doctor.specialties,
+        }))}
       />
     </Space>
   );

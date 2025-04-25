@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Modal, Form, Input, notification, Tooltip } from "antd";
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  notification,
+  Tooltip,
+  Tag,
+} from "antd";
 import axios from "axios";
-import { FiSearch } from "react-icons/fi";
+import { FiSearch, FiLock, FiUnlock } from "react-icons/fi";
 import { LiaEditSolid } from "react-icons/lia";
 import { RiDeleteBin5Line } from "react-icons/ri";
 import { PlusOutlined } from "@ant-design/icons";
@@ -19,7 +28,7 @@ const HospitalAdminPage = () => {
   useEffect(() => {
     fetchHospitals();
   }, []);
-
+  console.log("hospitals", hospitals);
   const fetchHospitals = async () => {
     setLoading(true);
     try {
@@ -29,45 +38,43 @@ const HospitalAdminPage = () => {
       setHospitals(response.data.hospitals);
     } catch (error) {
       console.error(error);
+      notification.error({
+        message: "Lỗi",
+        description: "Không thể tải danh sách cơ sở y tế!",
+      });
     }
     setLoading(false);
   };
 
-  const handleExportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(hospitals);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Hospitals");
-    XLSX.writeFile(workbook, "hospital_list.xlsx");
-  };
+  // const handleExportToExcel = () => {
+  //   const worksheet = XLSX.utils.json_to_sheet(hospitals);
+  //   const workbook = XLSX.utils.book_new();
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Hospitals");
+  //   XLSX.writeFile(workbook, "hospital_list.xlsx");
+  // };
 
-  const handleExportToPDF = () => {
-    const doc = new jsPDF();
+  // const handleExportToPDF = () => {
+  //   const doc = new jsPDF();
+  //   doc.addFileToVFS("Roboto-Regular.ttf", RobotoFont);
+  //   doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+  //   doc.setFont("Roboto");
+  //   doc.text("Danh sách cơ sở y tế", 14, 10);
 
-    // Add Roboto font
-    doc.addFileToVFS("Roboto-Regular.ttf", RobotoFont);
-    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-    doc.setFont("Roboto");
+  //   const tableColumn = ["Tên bệnh viện", "Email", "Địa chỉ", "Người quản lý"];
+  //   const tableRows = hospitals.map((hospital) => [
+  //     hospital.name,
+  //     hospital.email,
+  //     hospital.address,
+  //     hospital.managerName,
+  //   ]);
 
-    // Title
-    doc.text("Danh sách cơ sở y tế", 14, 10);
-
-    // Table data
-    const tableColumn = ["Tên bệnh viện", "Email", "Địa chỉ", "Người quản lý"];
-    const tableRows = hospitals.map((hospital) => [
-      hospital.name,
-      hospital.email,
-      hospital.address,
-      hospital.managerName,
-    ]);
-
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 20,
-    });
-
-    doc.save("hospital_list.pdf");
-  };
+  //   doc.autoTable({
+  //     head: [tableColumn],
+  //     body: tableRows,
+  //     startY: 20,
+  //   });
+  //   doc.save("hospital_list.pdf");
+  // };
 
   const handleOpenModal = () => {
     setIsModalVisible(true);
@@ -86,9 +93,9 @@ const HospitalAdminPage = () => {
       });
       handleCancel();
     } catch (error) {
-      console.error(error);
       notification.error({
-        message: error.response?.data?.message || "Đã xảy ra lỗi!",
+        message: "Lỗi",
+        description: error.response?.data?.message || "Đã xảy ra lỗi!",
       });
     }
   };
@@ -96,6 +103,61 @@ const HospitalAdminPage = () => {
   const handleCancel = () => {
     setIsModalVisible(false);
     form.resetFields();
+  };
+
+  // Handle lock hospital (client-side for testing)
+  const handleLock = (hospitalId) => {
+    Modal.confirm({
+      title: "Xác nhận khóa",
+      content: "Bạn có chắc muốn khóa cơ sở y tế này?",
+      okText: "Khóa",
+      cancelText: "Hủy",
+      okType: "danger",
+      onOk: () => {
+        setHospitals((prev) =>
+          prev.map((hospital) =>
+            hospital.id === hospitalId
+              ? { ...hospital, isActive: false }
+              : hospital
+          )
+        );
+        axios.put(`http://localhost:3000/hospitals/disable/${hospitalId}`, {
+          isActive: false,
+        });
+        notification.success({
+          message: "Thành công",
+          description: "Đã khóa cơ sở y tế!",
+          duration: 2,
+        });
+      },
+    });
+  };
+
+  // Handle unlock hospital (client-side for testing)
+  const handleUnlock = (hospitalId) => {
+    Modal.confirm({
+      title: "Xác nhận mở khóa",
+      content: "Bạn có chắc muốn mở khóa cơ sở y tế này?",
+      okText: "Mở khóa",
+      cancelText: "Hủy",
+      onOk: () => {
+        setHospitals((prev) =>
+          prev.map((hospital) =>
+            hospital.id === hospitalId
+              ? { ...hospital, isActive: true }
+              : hospital
+          )
+        );
+        axios.put(`http://localhost:3000/hospitals/disable/${hospitalId}`, {
+          isActive: true,
+        });
+        notification.success({
+          message: "Thành công",
+          description: "Đã mở khóa cơ sở y tế!",
+          duration: 2,
+        });
+      },
+    });
   };
 
   const columns = [
@@ -115,27 +177,67 @@ const HospitalAdminPage = () => {
       key: "address",
     },
     {
-      title: "Người quản lý",
-      dataIndex: "managerName",
-      key: "managerName",
+      title: "Tình trạng",
+      dataIndex: "status",
+      key: "status",
+      render: (text, record) => (
+        <Tag
+          color={
+            record.isActive &&
+            record?.manager?.isFirstLogin === false &&
+            record?.isDeleted === false
+              ? "green"
+              : record.isActive === false
+                ? "red"
+                : "yellow"
+          }
+        >
+          {record.isActive &&
+          record?.manager?.isFirstLogin === false &&
+          record?.isDeleted === false
+            ? "Đang hoạt động"
+            : record.isActive === false
+              ? "Đã khóa"
+              : "Chưa kích hoạt"}
+        </Tag>
+      ),
     },
     {
       title: "Hành động",
       key: "action",
       render: (text, record) => (
-        <div>
-          <Tooltip placement="bottom" title="Chỉnh sửa">
+        <div style={{ display: "flex", gap: 8 }}>
+          {/* <Tooltip placement="bottom" title="Chỉnh sửa">
             <Button
               icon={<LiaEditSolid size={24} color="#000" />}
               type="text"
             />
-          </Tooltip>
-          <Tooltip placement="bottom" title="Xóa">
+          </Tooltip> */}
+          {/* <Tooltip placement="bottom" title="Xóa">
             <Button
               icon={<RiDeleteBin5Line size={22} color="#ff0000" />}
               type="text"
             />
-          </Tooltip>
+          </Tooltip> */}
+          {record.isActive &&
+          record?.manager?.isFirstLogin === false &&
+          record?.isDeleted === false ? (
+            <Tooltip placement="bottom" title="Khóa">
+              <Button
+                icon={<FiLock size={22} color="#ff4d4f" />}
+                type="text"
+                onClick={() => handleLock(record.id)}
+              />
+            </Tooltip>
+          ) : record.isActive === false ? (
+            <Tooltip placement="bottom" title="Mở khóa">
+              <Button
+                icon={<FiUnlock size={22} color="#52c41a" />}
+                type="text"
+                onClick={() => handleUnlock(record.id)}
+              />
+            </Tooltip>
+          ) : null}
         </div>
       ),
     },
@@ -163,12 +265,12 @@ const HospitalAdminPage = () => {
           prefix={<FiSearch />}
         />
         <div style={{ display: "flex", gap: "10px" }}>
-          <Button type="primary" onClick={handleExportToExcel}>
+          {/* <Button type="primary" onClick={handleExportToExcel}>
             Xuất Excel
           </Button>
           <Button type="primary" onClick={handleExportToPDF}>
             Xuất PDF
-          </Button>
+          </Button> */}
           <Button
             type="primary"
             onClick={handleOpenModal}
@@ -216,7 +318,10 @@ const AddNewHospital = ({ onSubmit, form }) => {
       <Form.Item
         name="email"
         label="Email"
-        rules={[{ required: true, message: "Vui lòng nhập email" }]}
+        rules={[
+          { required: true, message: "Vui lòng nhập email" },
+          { type: "email", message: "Email không hợp lệ" },
+        ]}
       >
         <Input placeholder="Nhập email" />
       </Form.Item>

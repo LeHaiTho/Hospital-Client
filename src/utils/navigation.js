@@ -1,7 +1,7 @@
 export const handleNavigation = (role, navigate) => {
   switch (role) {
     case "admin":
-      navigate("/admin");
+      navigate("/admin/hospitals/list");
       break;
     case "doctor":
       navigate("/doctor");

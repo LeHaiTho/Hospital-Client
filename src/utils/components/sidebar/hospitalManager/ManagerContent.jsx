@@ -10,7 +10,7 @@ import SpecialtyList from "../../../../pages/hospitalManager/SpecialtyList";
 import WorkingSchedule from "../../../../pages/hospitalManager/WorkingSchedule";
 import TimeOffList from "../../../../pages/hospitalManager/TimeOffList";
 import Dashboard from "../../../../pages/hospitalManager/Dashboard";
-import RoomList from "../../../../pages/hospitalManager/RoomList";
+import HistoryBooking from "../../../../pages/hospitalManager/HistoryBooking";
 const { Content } = Layout;
 
 const ManagerContent = () => {
@@ -35,9 +35,10 @@ const ManagerContent = () => {
         <Route path="/schedule-doctor" element={<ScheduleDoctor />} />
         <Route path="/specialty-list" element={<SpecialtyList />} />
         <Route path="/working-schedule" element={<WorkingSchedule />} />
-        <Route path="/room" element={<RoomList />} />
+        {/* <Route path="/room" element={<RoomList />} /> */}
         <Route path="/time-off-list" element={<TimeOffList />} />
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/history-booking" element={<HistoryBooking />} />
+        {/* <Route path="/" element={<Dashboard />} /> */}
       </Routes>
     </Content>
   );
