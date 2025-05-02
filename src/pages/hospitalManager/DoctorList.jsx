@@ -86,51 +86,51 @@ const DoctorList = () => {
   };
 
   // Check license code
-  const checkLicenseCode = async (licenseCode) => {
-    try {
-      const response = await axiosConfig.get(
-        `/doctors/get-doctor-by-license-code?licenseCode=${licenseCode}`
-      );
-      if (response.doctorDetail) {
-        form.setFieldsValue({
-          fullname: response.doctorDetail.fullname,
-          phone: response.doctorDetail.phone,
-          email: response.doctorDetail.email,
-          description: response.doctorDetail.description,
-          gender: response.doctorDetail.gender,
-          birthday: response.doctorDetail.birthday
-            ? moment(response.doctorDetail.birthday, "YYYY-MM-DD")
-            : null,
-        });
-        setDoctorDetail(response.doctorDetail);
-        setFileList(
-          response.doctorDetail.avatar
-            ? [
-                {
-                  uid: "-1",
-                  name: "avatar",
-                  status: "done",
-                  url: `http://localhost:3000${response.doctorDetail.avatar}`,
-                },
-              ]
-            : []
-        );
-      } else {
-        form.setFieldsValue({
-          fullname: "",
-          phone: "",
-          email: "",
-          description: "",
-          gender: undefined,
-          birthday: null,
-        });
-        setDoctorDetail(null);
-        setFileList([]);
-      }
-    } catch (error) {
-      console.error("Error checking license code:", error);
-    }
-  };
+  // const checkLicenseCode = async (licenseCode) => {
+  //   try {
+  //     const response = await axiosConfig.get(
+  //       `/doctors/get-doctor-by-license-code?licenseCode=${licenseCode}`
+  //     );
+  //     if (response.doctorDetail) {
+  //       form.setFieldsValue({
+  //         fullname: response.doctorDetail.fullname,
+  //         phone: response.doctorDetail.phone,
+  //         email: response.doctorDetail.email,
+  //         description: response.doctorDetail.description,
+  //         gender: response.doctorDetail.gender,
+  //         birthday: response.doctorDetail.birthday
+  //           ? moment(response.doctorDetail.birthday, "YYYY-MM-DD")
+  //           : null,
+  //       });
+  //       setDoctorDetail(response.doctorDetail);
+  //       setFileList(
+  //         response.doctorDetail.avatar
+  //           ? [
+  //               {
+  //                 uid: "-1",
+  //                 name: "avatar",
+  //                 status: "done",
+  //                 url: `http://localhost:3000${response.doctorDetail.avatar}`,
+  //               },
+  //             ]
+  //           : []
+  //       );
+  //     } else {
+  //       form.setFieldsValue({
+  //         fullname: "",
+  //         phone: "",
+  //         email: "",
+  //         description: "",
+  //         gender: undefined,
+  //         birthday: null,
+  //       });
+  //       setDoctorDetail(null);
+  //       setFileList([]);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error checking license code:", error);
+  //   }
+  // };
 
   // Get specialties of hospital
   useEffect(() => {
@@ -162,7 +162,7 @@ const DoctorList = () => {
     setEditDoctor(doctor);
     setDoctorDetail(null);
     form.setFieldsValue({
-      licenseCode: doctor.licenseCode,
+      // licenseCode: doctor.licenseCode,
       fullname: doctor.fullname,
       phone: doctor.phone,
       email: doctor.email,
@@ -210,7 +210,7 @@ const DoctorList = () => {
       formData.append("phone", values.phone);
       formData.append("email", values.email);
       formData.append("gender", values.gender);
-      formData.append("licenseCode", values.licenseCode);
+      // formData.append("licenseCode", values.licenseCode);
       formData.append("specialty", values.specialty.join(","));
       formData.append(
         "birthday",
@@ -462,7 +462,7 @@ const DoctorList = () => {
         borderRadius: "10px",
       }}
     >
-      <h2 style={{ textTransform: "uppercase" }}>Danh sách bác sĩ</h2>
+      <h2 style={{ textTransform: "uppercase" }}>Danh sách bác sĩ </h2>
       <Space
         direction="horizontal"
         size="middle"
@@ -537,7 +537,7 @@ const DoctorList = () => {
         confirmLoading={loading}
       >
         <Form form={form} layout="vertical" onFinish={handleFinish}>
-          <Form.Item
+          {/* <Form.Item
             name="licenseCode"
             label="Mã chứng chỉ hành nghề"
             rules={[{ required: true, message: "Vui lòng nhập mã chứng chỉ" }]}
@@ -562,7 +562,7 @@ const DoctorList = () => {
               động cập nhật, hãy cung cấp thông tin chuyên khoa khám của bác sĩ
               này tại cơ sở y tế của bạn.
             </p>
-          )}
+          )} */}
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
