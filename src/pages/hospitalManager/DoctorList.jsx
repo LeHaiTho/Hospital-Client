@@ -85,54 +85,6 @@ const DoctorList = () => {
     }
   };
 
-  // Check license code
-  // const checkLicenseCode = async (licenseCode) => {
-  //   try {
-  //     const response = await axiosConfig.get(
-  //       `/doctors/get-doctor-by-license-code?licenseCode=${licenseCode}`
-  //     );
-  //     if (response.doctorDetail) {
-  //       form.setFieldsValue({
-  //         fullname: response.doctorDetail.fullname,
-  //         phone: response.doctorDetail.phone,
-  //         email: response.doctorDetail.email,
-  //         description: response.doctorDetail.description,
-  //         gender: response.doctorDetail.gender,
-  //         birthday: response.doctorDetail.birthday
-  //           ? moment(response.doctorDetail.birthday, "YYYY-MM-DD")
-  //           : null,
-  //       });
-  //       setDoctorDetail(response.doctorDetail);
-  //       setFileList(
-  //         response.doctorDetail.avatar
-  //           ? [
-  //               {
-  //                 uid: "-1",
-  //                 name: "avatar",
-  //                 status: "done",
-  //                 url: `http://localhost:3000${response.doctorDetail.avatar}`,
-  //               },
-  //             ]
-  //           : []
-  //       );
-  //     } else {
-  //       form.setFieldsValue({
-  //         fullname: "",
-  //         phone: "",
-  //         email: "",
-  //         description: "",
-  //         gender: undefined,
-  //         birthday: null,
-  //       });
-  //       setDoctorDetail(null);
-  //       setFileList([]);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error checking license code:", error);
-  //   }
-  // };
-
-  // Get specialties of hospital
   useEffect(() => {
     const getSpecialties = async () => {
       try {
@@ -218,6 +170,9 @@ const DoctorList = () => {
       );
       formData.append("description", values.description || "");
       formData.append("consultation_fee", values.consultation_fee);
+      // console.log(formData.getAll());
+      console.log(formData.get("fullname"));
+      console.log(formData.get("image"));
 
       const url = editMode
         ? `/doctors/update-doctor/${editDoctor.id}`
@@ -377,80 +332,6 @@ const DoctorList = () => {
       },
     },
   ];
-
-  // const exportToExcel = (data) => {
-  //   const excelData = data.map((record) => ({
-  //     "Họ và tên": record.fullname,
-  //     "Chuyên khoa": record.specialties.map((item) => item.name).join(", "),
-  //     Email: record.email,
-  //     "Số điện thoại": record.phone,
-  //     "Giá khám": record.consultation_fee[0]
-  //       ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
-  //       : "",
-  //     "Trạng thái": record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
-  //   }));
-  //   const worksheet = XLSX.utils.json_to_sheet(excelData);
-  //   const workbook = XLSX.utils.book_new();
-  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách bác sĩ");
-  //   XLSX.writeFile(workbook, "DanhSachBacSi.xlsx");
-  // };
-
-  // const exportToPDF = (data) => {
-  //   const doc = new jsPDF();
-  //   doc.setFontSize(18);
-  //   doc.text("DANH SÁCH BÁC SĨ", 14, 20);
-  //   doc.setFontSize(12);
-  //   doc.text(`Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`, 14, 30);
-  //   const tableData = data.map((record, index) => [
-  //     index + 1,
-  //     record.fullname,
-  //     record.specialties.map((item) => item.name).join(", "),
-  //     record.email,
-  //     record.phone,
-  //     record.consultation_fee[0]
-  //       ? `${Number(record.consultation_fee[0]).toLocaleString()} VNĐ`
-  //       : "",
-  //     record.isActive ? "Đang làm việc" : "Đã nghỉ việc",
-  //   ]);
-  //   doc.autoTable({
-  //     head: [
-  //       [
-  //         "STT",
-  //         "Họ và tên",
-  //         "Chuyên khoa",
-  //         "Email",
-  //         "Số điện thoại",
-  //         "Giá khám",
-  //         "Trạng thái",
-  //       ],
-  //     ],
-  //     body: tableData,
-  //     startY: 40,
-  //     theme: "grid",
-  //     headStyles: {
-  //       fillColor: [0, 123, 255],
-  //       textColor: [255, 255, 255],
-  //       fontSize: 12,
-  //     },
-  //     bodyStyles: {
-  //       fontSize: 10,
-  //     },
-  //     columnStyles: {
-  //       0: { cellWidth: 10 },
-  //       1: { cellWidth: 40 },
-  //       2: { cellWidth: 50 },
-  //       3: { cellWidth: 50 },
-  //       4: { cellWidth: 30 },
-  //       5: { cellWidth: 30 },
-  //       6: { cellWidth: 30 },
-  //     },
-  //   });
-  //   const pageCount = doc.internal.getNumberOfPages();
-  //   doc.setFontSize(10);
-  //   doc.text(`Trang ${pageCount}`, 180, 290);
-  //   doc.save("DanhSachBacSi.pdf");
-  // };
-
   return (
     <Space
       direction="vertical"
@@ -504,12 +385,6 @@ const DoctorList = () => {
           >
             Làm mới
           </Button>
-          {/* <Button type="primary" onClick={() => exportToExcel(searchData)}>
-            Xuất Excel
-          </Button>
-          <Button type="primary" onClick={() => exportToPDF(searchData)}>
-            Xuất PDF
-          </Button> */}
         </Space>
         <Button
           style={{
@@ -537,32 +412,6 @@ const DoctorList = () => {
         confirmLoading={loading}
       >
         <Form form={form} layout="vertical" onFinish={handleFinish}>
-          {/* <Form.Item
-            name="licenseCode"
-            label="Mã chứng chỉ hành nghề"
-            rules={[{ required: true, message: "Vui lòng nhập mã chứng chỉ" }]}
-          >
-            <Input
-              placeholder="Nhập mã chứng chỉ"
-              disabled={editMode}
-              onBlur={
-                editMode ? undefined : (e) => checkLicenseCode(e.target.value)
-              }
-            />
-          </Form.Item>
-          {doctorDetail && (
-            <p
-              style={{
-                color: "#ff4d4f",
-                marginTop: "-20px",
-                fontSize: "12px",
-              }}
-            >
-              Bác sĩ đang làm việc tại cơ sở y tế khác. Các thông tin đã được tự
-              động cập nhật, hãy cung cấp thông tin chuyên khoa khám của bác sĩ
-              này tại cơ sở y tế của bạn.
-            </p>
-          )} */}
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -645,7 +494,8 @@ const DoctorList = () => {
                   placeholder="Chọn ngày sinh"
                   format="DD/MM/YYYY"
                   style={{ width: "100%", color: "#000" }}
-                  defaultValue={form.getFieldValue("birthday") || null}
+                  // defaultValue={form.getFieldValue("birthday") || null}
+                  defaultValue={null}
                 />
               </Form.Item>
             </Col>

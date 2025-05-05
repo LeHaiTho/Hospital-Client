@@ -207,18 +207,6 @@ const HospitalAdminPage = () => {
       key: "action",
       render: (text, record) => (
         <div style={{ display: "flex", gap: 8 }}>
-          {/* <Tooltip placement="bottom" title="Chỉnh sửa">
-            <Button
-              icon={<LiaEditSolid size={24} color="#000" />}
-              type="text"
-            />
-          </Tooltip> */}
-          {/* <Tooltip placement="bottom" title="Xóa">
-            <Button
-              icon={<RiDeleteBin5Line size={22} color="#ff0000" />}
-              type="text"
-            />
-          </Tooltip> */}
           {record.isActive &&
           record?.manager?.isFirstLogin === false &&
           record?.isDeleted === false ? (

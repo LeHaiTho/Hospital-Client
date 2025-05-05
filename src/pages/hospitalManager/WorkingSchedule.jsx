@@ -23,15 +23,6 @@ import { AiFillFileExcel } from "react-icons/ai";
 import { FileExcelOutlined, FilePdfOutlined } from "@ant-design/icons";
 
 moment.locale("vi");
-// Dữ liệu mẫu
-// const sampleData = {
-//   Monday: [
-//     { start: "07:00", end: "12:00", title: "Ca sáng" },
-//     { start: "13:00", end: "17:30", title: "Ca chiều" },
-//   ],
-//   Wednesday: [{ start: "07:00", end: "12:00", title: "Ca sáng" }],
-//   Friday: [{ start: "13:00", end: "17:30", title: "Ca chiều" }],
-// };
 const WorkingSchedule = () => {
   const [events, setEvents] = useState([]);
 
@@ -39,45 +30,6 @@ const WorkingSchedule = () => {
   const [eventToDelete, setEventToDelete] = useState(null); // Event to delete
   const [hospitalSchedule, setHospitalSchedule] = useState([]);
   const [openModal, setOpenModal] = useState(false);
-  // useEffect(() => {
-  //   const currentWeekStart = dayjs().startOf("week"); // Ngày đầu tuần (Chủ Nhật)
-
-  //   // Chuyển đổi dữ liệu mẫu thành các sự kiện
-  //   const newEvents = Object.entries(sampleData).flatMap(([dayName, slots]) => {
-  //     const dayIndex = [
-  //       "Sunday",
-  //       "Monday",
-  //       "Tuesday",
-  //       "Wednesday",
-  //       "Thursday",
-  //       "Friday",
-  //       "Saturday",
-  //     ].indexOf(dayName);
-  //     const dayDate = currentWeekStart.add(dayIndex, "day"); // Tính ngày cụ thể trong tuần hiện tại
-
-  //     return slots.map((slot) => {
-  //       const startDateTime = dayDate
-  //         .hour(Number(slot.start.split(":")[0]))
-  //         .minute(Number(slot.start.split(":")[1]))
-  //         .toDate();
-  //       const endDateTime = dayDate
-  //         .hour(Number(slot.end.split(":")[0]))
-  //         .minute(Number(slot.end.split(":")[1]))
-  //         .toDate();
-
-  //       return {
-  //         id: Math.random(), // Tạo ID ngẫu nhiên
-  //         title: slot.title,
-  //         start: startDateTime,
-  //         end: endDateTime,
-  //       };
-  //     });
-  //   });
-
-  //   setEvents(newEvents); // Cập nhật state với sự kiện mới
-  // }, []);
-
-  // Handle drag-and-drop
 
   const fetchHospitalSchedule = async () => {
     try {
@@ -159,15 +111,6 @@ const WorkingSchedule = () => {
     );
     setEvents(updatedEvents);
   };
-
-  // const onEventDrop = ({ event, start, end, allDay }) => {
-  //   const updatedEvents = events.map((existingEvent) =>
-  //     existingEvent.id === event.id
-  //       ? { ...existingEvent, start, end, allDay }
-  //       : existingEvent
-  //   );
-  //   setEvents(updatedEvents);
-  // };
 
   // Handle resize event
   const onEventResize = ({ event, start, end }) => {

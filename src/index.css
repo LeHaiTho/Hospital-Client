@@ -8,14 +8,6 @@
   font-family: "Roboto", sans-serif;
 }
 
-/* .app-header {
-  background: #fff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #ccc;
-} */
-
 .app-name {
   display: flex;
   flex-direction: row;
@@ -36,27 +28,6 @@
   gap: 5px;
   font-size: 24;
 }
-/* .ant-menu-submenu .ant-menu-submenu-inline .ant-menu-submenu-open {
-    background-color: blue !important;
-    color: #fff !important;
-    font-weight: 500;
-  }
-.custom-menu .ant-menu-item-selected {
-  background-color: red !important;
-} */
-
-/* .ant-menu-submenu-title {
-  background-color: blue !important;
-} */
-
-/* .ant-menu-submenu .ant-menu-item-selected {
-  background-color: #d6e4ff !important;
-  color: #1d39c4 !important;
-} */
-/* 
-.ant-menu-submenu-open > .ant-menu-sub > .ant-menu-item-active {
-  background-color: red !important;
-} */
 
 .toggle-theme-btn {
   position: absolute;

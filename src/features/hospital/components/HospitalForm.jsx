@@ -33,13 +33,15 @@ const HospitalForm = () => {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [address, setAddress] = useState("");
-
+  const [phone, setPhone] = useState("");
+  console.log("initialValues", initialValues);
   // Fetch hospital info
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         const res = await axiosInstance.get("/hospitals");
+        console.log(res);
         const hospital = {
           name: res.hospital.name,
           email: res.hospital.email,
@@ -47,6 +49,7 @@ const HospitalForm = () => {
           address: res.hospital.address,
           latitude: res.hospital.latitude,
           longitude: res.hospital.longitude,
+          phone: res.hospital.manager.phone,
         };
         form.setFieldsValue(hospital);
         setInitialValues({
@@ -59,6 +62,7 @@ const HospitalForm = () => {
         setAddress(res.hospital.address || "");
         setLatitude(res.hospital.latitude || "");
         setLongitude(res.hospital.longitude || "");
+        setPhone(res.hospital.phone || "");
         if (res.hospital.avatar) {
           setAvatar([
             {
@@ -302,6 +306,7 @@ const HospitalForm = () => {
               >
                 <Input
                   placeholder="Số điện thoại"
+                  name="phone"
                   style={{ borderRadius: 6 }}
                 />
               </Form.Item>
@@ -442,7 +447,7 @@ const HospitalForm = () => {
           <Form.Item
             label="Mô tả"
             name="description"
-            rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
+            // rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
           >
             <CKEditor
               editor={ClassicEditor}

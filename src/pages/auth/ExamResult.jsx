@@ -115,6 +115,7 @@ const ExamResult = () => {
   const onFinish = async () => {
     const formDataToSend = new FormData();
 
+    // Thêm dữ liệu JSON
     formDataToSend.append(
       "data",
       JSON.stringify({
@@ -125,13 +126,17 @@ const ExamResult = () => {
         imagingDiagnostics: formData.imagingDiagnostics.map((diag) => ({
           description: diag.description,
           fileType: diag.fileType,
+          name: diag.name,
         })),
       })
     );
 
+    // Thêm các file vào FormData với trường "files"
     formData.imagingDiagnostics.forEach((diag) => {
-      formDataToSend.append("files", diag.file);
+      formDataToSend.append("files", diag.file); // Sử dụng "files" thay vì `files[${index}]`
     });
+
+    console.log("formDataToSend", formDataToSend.get("data"));
 
     try {
       const res = await axiosConfig.post(
@@ -170,11 +175,18 @@ const ExamResult = () => {
 
   const handleFileChange = (event) => {
     const uploadedFiles = Array.from(event.target.files);
+    if (uploadedFiles.length === 0) {
+      message.warning("Vui lòng chọn ít nhất một file!");
+      return;
+    }
+
     const newDiagnostics = uploadedFiles.map((file) => ({
-      file,
+      file, // Lưu toàn bộ đối tượng file
+      name: file.name, // Lưu tên file để hiển thị
       description: "",
-      fileType: "",
+      fileType: file.type, // Lưu loại file (jpg, png, v.v.)
     }));
+
     setFormData((prev) => ({
       ...prev,
       imagingDiagnostics: [...prev.imagingDiagnostics, ...newDiagnostics],
@@ -545,7 +557,7 @@ const ExamResult = () => {
               </Button>
             </Form.Item>
 
-            <Form.Item>
+            {/* <Form.Item>
               <input
                 type="file"
                 multiple
@@ -573,6 +585,74 @@ const ExamResult = () => {
                     }}
                   >
                     <p style={{ width: "100px" }}>File: {diag.file.name}</p>
+                    <input
+                      style={{
+                        width: "200px",
+                        padding: 8,
+                        borderRadius: 10,
+                        color: "black",
+                        border: "1px solid #ccc",
+                      }}
+                      type="text"
+                      placeholder="Mô tả"
+                      value={diag.description}
+                      onChange={(e) =>
+                        handleDiagnosticChange(
+                          index,
+                          "description",
+                          e.target.value
+                        )
+                      }
+                    />
+                    <Button
+                      type="text"
+                      onClick={() => handleRemoveDiagnostic(index)}
+                    >
+                      <DeleteOutlined style={{ color: "red" }} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Form.Item> */}
+            <Form.Item>
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                accept=".jpg,.png,.jpeg"
+              />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  marginTop: "10px",
+                }}
+              >
+                {formData.imagingDiagnostics.map((diag, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      marginBottom: "1em",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      display: "flex",
+                      gap: 10,
+                      width: "45%",
+                    }}
+                  >
+                    <p
+                      style={{
+                        width: "150px",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                      title={diag.name} // Hiển thị tooltip khi hover để thấy tên đầy đủ
+                    >
+                      File: {diag.name || "Không có tên file"}
+                    </p>
                     <input
                       style={{
                         width: "200px",

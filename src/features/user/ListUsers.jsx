@@ -442,28 +442,6 @@ const ListUsers = () => {
             >
               <Input />
             </Form.Item>
-            {/* <Form.Item name="address" label="Địa chỉ">
-              <Input />
-            </Form.Item>
-            <Form.Item name="gender" label="Giới tính">
-              <Select allowClear>
-                <Option value="male">Nam</Option>
-                <Option value="female">Nữ</Option>
-                <Option value="other">Khác</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="date_of_birth" label="Ngày sinh">
-              <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
-            </Form.Item>
-            <Form.Item name="province" label="Tỉnh/Thành phố">
-              <Input />
-            </Form.Item>
-            <Form.Item name="district" label="Quận/Huyện">
-              <Input />
-            </Form.Item>
-            <Form.Item name="ward" label="Phường/Xã">
-              <Input />
-            </Form.Item> */}
             {modalMode === "create" && (
               <Form.Item
                 name="isActivated"

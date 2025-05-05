@@ -22,30 +22,12 @@ const SpecialtyInfo = () => {
       console.log(error);
     }
   };
-  console.log(specialties);
-  // useEffect(() => {
-  //   const getSpecialties = async () => {
-  //     const response = await axiosConfig.get(
-  //       "/hospital-specialties/list-specialty-of-hospital"
-  //     );
-  //     setSpecialties(response.specialtiesOfSystem);
-  //   };
-  //   getSpecialties();
-  // }, []);
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const columns = [
-    // {
-    //   title: "ID",
-    //   dataIndex: "id",
-    //   key: "id",
-    //   align: "center",
-    //   width: "50px",
-    //   render: (text, record) => <div>{record.id}</div>,
-    // },
     {
       title: "Ảnh",
       dataIndex: "image",
