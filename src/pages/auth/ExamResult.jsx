@@ -353,7 +353,6 @@ const ExamResult = () => {
                   ]}
                 >
                   <Input
-                    type="number"
                     value={formData.healthCheckInfo.heartRate}
                     onChange={(e) => {
                       setFormData({
