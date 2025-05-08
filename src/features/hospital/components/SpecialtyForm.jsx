@@ -139,24 +139,24 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
 
       <Form.Item
         name="name"
-        label="Tiêu đề chuyên khoa"
+        label="Tên gói dịch vụ khám"
         rules={[
-          { required: true, message: "Vui lòng nhập tiêu đề chuyên khoa" },
+          { required: true, message: "Vui lòng nhập tên gói dịch vụ khám" },
         ]}
       >
         <Input
-          placeholder="Nhập tiêu đề chuyên khoa"
+          placeholder="Nhập tên gói dịch vụ khám"
           style={{ borderRadius: 8 }}
         />
       </Form.Item>
 
       <Form.Item
         name="image"
-        label="Ảnh thông tin chuyên khoa"
+        label="Ảnh thông tin gói dịch vụ"
         rules={[
           {
             required: !initialValues,
-            message: "Vui lòng chọn ảnh thông tin chuyên khoa",
+            message: "Vui lòng chọn ảnh thông tin gói dịch vụ",
           },
         ]}
       >
@@ -211,7 +211,7 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
       <Form.Item
         name="description"
         label="Mô tả"
-        rules={[{ required: true, message: "Vui lòng nhập mô tả chuyên khoa" }]}
+        rules={[{ required: true, message: "Vui lòng nhập mô tả gói dịch vụ" }]}
       >
         <Input.TextArea
           style={{ width: "100%", borderRadius: 8 }}
