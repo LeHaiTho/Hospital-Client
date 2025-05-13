@@ -172,7 +172,7 @@ const TimeOffList = () => {
         message.error("Vui lòng nhập lý do từ chối");
         return;
       }
-
+      console.log("selectedStatus", selectedStatus);
       const res = await axiosConfig.patch(
         `/doctor-unavailable-times/update-status/${selectedData?.id}`,
         {
@@ -180,6 +180,7 @@ const TimeOffList = () => {
           reason_reject: selectedStatus === "rejected" ? reasonReject : null,
         }
       );
+      console.log("res", res);
       notification.success({
         message: "Thành công",
         description: "Cập nhật trạng thái đơn thành công!",
@@ -316,8 +317,8 @@ const TimeOffList = () => {
                     {option.value === "rejected"
                       ? "Hủy đơn"
                       : option.value === "approved"
-                        ? "Duyệt"
-                        : option.label}
+                      ? "Duyệt"
+                      : option.label}
                   </Radio>
                 ))}
             </Radio.Group>

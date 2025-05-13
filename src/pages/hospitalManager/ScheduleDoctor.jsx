@@ -2,10 +2,21 @@ import React, { useState, useEffect } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Checkbox, Select, DatePicker, Button, notification } from "antd";
+import {
+  Select,
+  Button,
+  DatePicker,
+  notification,
+  Modal,
+  Table,
+  Empty,
+  Spin,
+  Tag,
+} from "antd";
 import "./style.css";
 import axiosConfig from "../../apis/axiosConfig";
 import dayjs from "dayjs";
+import "moment/locale/vi";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -20,6 +31,9 @@ const ScheduleDoctor = () => {
   const [dateTimeRange, setDateTimeRange] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveDisabled, setIsSaveDisabled] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [doctorSchedules, setDoctorSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
 
   const fetchDoctorList = async () => {
     try {
@@ -54,7 +68,31 @@ const ScheduleDoctor = () => {
     setEvents((prevEvents) =>
       prevEvents.map((event) => ({ ...event, isSelected: false }))
     );
+
+    // Nếu có bác sĩ được chọn, lấy lịch làm việc của bác sĩ đó
+    if (selectedDoctor) {
+      fetchDoctorSchedules(selectedDoctor);
+    }
   }, [selectedDoctor]);
+
+  const fetchDoctorSchedules = async (doctorId) => {
+    try {
+      setLoadingSchedules(true);
+      const response = await axiosConfig.get(
+        `/doctor-schedules/doctor/${doctorId}/get-all-schedules`
+      );
+      setDoctorSchedules(response.schedules || []);
+    } catch (error) {
+      console.log("Error fetching doctor schedules:", error);
+      notification.error({
+        message: "Không thể lấy lịch làm việc của bác sĩ",
+        description: "Đã xảy ra lỗi khi tải lịch làm việc của bác sĩ.",
+      });
+      setDoctorSchedules([]);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  };
 
   const convertScheduleData = (data) => {
     return data?.flatMap((day) =>
@@ -147,199 +185,272 @@ const ScheduleDoctor = () => {
     const startDate = dateTimeRange[0];
     const endDate = dateTimeRange[dateTimeRange.length - 1];
 
-    const schedules = [];
+    const schedules = {};
     selectedEvents.forEach((event) => {
-      const dateOfWeek = dayjs(event.start).format("dddd");
-      const shiftType = event.title.includes("Ca sáng")
-        ? "morning"
-        : "afternoon";
-      const startTime = dayjs(event.start).format("HH:mm");
-      const endTime = dayjs(event.end).format("HH:mm");
+      const dayOfWeek = moment(event.start).format("dddd");
+      const startTime = moment(event.start).format("HH:mm:ss");
+      const endTime = moment(event.end).format("HH:mm:ss");
+      let shiftType;
 
-      let schedule = schedules.find(
-        (schedule) => schedule.date_of_week === dateOfWeek
-      );
-
-      if (!schedule) {
-        schedule = {
-          date_of_week: dateOfWeek,
-          time_slots: [],
-        };
-        schedules.push(schedule);
+      if (event.title.toLowerCase().includes("ca sáng")) {
+        shiftType = "morning";
+      } else if (event.title.toLowerCase().includes("ca chiều")) {
+        shiftType = "afternoon";
+      } else if (event.title.toLowerCase().includes("ca tối")) {
+        shiftType = "evening";
       }
 
-      schedule.time_slots.push({
-        shift_type: shiftType,
-        start: startTime,
-        end: endTime,
+      // Lặp qua từng ngày trong nhóm ngày theo thứ
+      groupedDates[dayOfWeek]?.forEach((date) => {
+        if (!schedules[date]) {
+          schedules[date] = {
+            date_of_week: dayOfWeek,
+            time_slots: [],
+          };
+        }
+
+        // Thêm time slot vào ngày
+        schedules[date].time_slots.push({
+          shift_type: shiftType,
+          start: startTime,
+          end: endTime,
+        });
       });
     });
 
-    const finalSchedule = [];
-    Object.keys(groupedDates).forEach((dayOfWeek) => {
-      const scheduleForDay = schedules.find(
-        (schedule) => schedule.date_of_week === dayOfWeek
-      );
-
-      if (scheduleForDay) {
-        groupedDates[dayOfWeek].forEach((date) => {
-          finalSchedule.push({
-            date: date,
-            date_of_week: dayOfWeek,
-            time_slots: scheduleForDay.time_slots,
-          });
-        });
-      }
-    });
-
-    finalSchedule.sort((a, b) =>
-      dayjs(a.date).isBefore(dayjs(b.date)) ? -1 : 1
-    );
-
-    const result = {
-      schedules: finalSchedule,
-      doctorId: doctorId,
+    return {
+      schedules,
+      doctorId,
       slotDuration: selectedTimeSlot,
-      startDate: startDate,
-      endDate: endDate,
     };
-
-    return result;
   };
 
   const handleSaveSchedule = async () => {
-    const result = formatDataToSend();
-    if (!result) return;
+    if (!selectedDoctor || !dateTimeRange.length || !selectedTimeSlot) {
+      notification.error({
+        message: "Thiếu thông tin",
+        description:
+          "Vui lòng chọn bác sĩ, khoảng thời gian và thời lượng cuộc hẹn",
+      });
+      return;
+    }
+
+    const selectedEvents = events.filter((event) => event.isSelected);
+    if (selectedEvents.length === 0) {
+      notification.error({
+        message: "Chưa chọn ca làm việc",
+        description: "Vui lòng chọn ít nhất một ca làm việc",
+      });
+      return;
+    }
 
     setIsSaving(true);
     try {
+      const dataToSend = formatDataToSend();
       const response = await axiosConfig.post(
-        "doctor-schedules/create-schedule2",
-        result
+        "/doctor-schedules/create-schedule",
+        dataToSend
       );
-      if (response) {
-        notification.success({
-          message: "Lưu lịch thành công!",
-        });
-        setIsSaveDisabled(true);
-      }
+
+      notification.success({
+        message: "Thành công",
+        description: response.message || "Đã tạo lịch làm việc thành công",
+      });
+
+      // Reset form
+      setSelectedDoctor(null);
+      setDateTimeRange([]);
+      setSelectedTimeSlot(null);
+      setEvents((prevEvents) =>
+        prevEvents.map((event) => ({ ...event, isSelected: false }))
+      );
     } catch (error) {
       console.log(error);
       notification.error({
-        message: "Lưu lịch thất bại, vui lòng thử lại!",
+        message: "Lỗi",
+        description:
+          error.response?.data?.message ||
+          "Đã xảy ra lỗi khi tạo lịch làm việc",
       });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const CustomEvent = ({ event }) => {
-    const eventStyle = {
-      display: "flex",
-      justifyContent: "space-between",
-      flexDirection: "column",
-      height: "100%",
-      width: "100%",
-      padding: "5px",
+  const handleRangeChange = (dates, dateStrings) => {
+    if (!dates) {
+      setDateTimeRange([]);
+      return;
+    }
+
+    const startDate = moment(dateStrings[0], "DD-MM-YYYY");
+    const endDate = moment(dateStrings[1], "DD-MM-YYYY");
+    const dateRange = [];
+
+    // Tạo mảng các ngày trong khoảng
+    let currentDate = startDate.clone();
+    while (currentDate.isSameOrBefore(endDate)) {
+      dateRange.push(currentDate.format("YYYY-MM-DD"));
+      currentDate.add(1, "days");
+    }
+
+    setDateTimeRange(dateRange);
+  };
+
+  const filterByDayOfWeek = (dates, dayOfWeek) => {
+    return dates.filter((date) => {
+      const day = moment(date).day();
+      return day === dayOfWeek;
+    });
+  };
+
+  const groupDatesByDayOfWeek = () => {
+    const grouped = {
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+      Saturday: [],
+      Sunday: [],
     };
 
+    dateTimeRange.forEach((date) => {
+      const dayOfWeek = moment(date).format("dddd");
+      grouped[dayOfWeek].push(date);
+    });
+
+    return grouped;
+  };
+
+  const CustomEvent = ({ event }) => {
     return (
       <div
         style={{
-          color: event.isSelected ? "#0165ff" : "#000",
-          fontWeight: event.isSelected ? "500" : "400",
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 5,
         }}
       >
-        <div style={eventStyle}>{event.title}</div>
-        <div style={eventStyle}>
-          <Checkbox
-            checked={event.isSelected}
-            onChange={() => handleCheckboxChange(event.id)}
-            size="small"
-            style={{
-              marginBottom: "5px",
-              fontWeight: event.isSelected ? "500" : "400",
-              color: event.isSelected ? "#0165ff" : "#000",
-            }}
-          >
-            Chọn
-          </Checkbox>
-        </div>
+        <input
+          type="checkbox"
+          checked={event.isSelected}
+          onChange={() => handleCheckboxChange(event.id)}
+          disabled={!selectedDoctor || !dateTimeRange.length}
+        />
+        <span>{event.title}</span>
       </div>
     );
   };
 
   const eventPropGetter = (event) => {
+    let style = {
+      backgroundColor: "#3174ad",
+      borderRadius: "5px",
+      opacity: 0.8,
+      color: "white",
+      border: "0px",
+      display: "block",
+    };
+
+    if (event.isSelected) {
+      style.backgroundColor = "#28a745";
+      style.opacity = 1;
+    }
+
     return {
-      style: {
-        backgroundColor: "#cce0fe",
-        color: event.isSelected ? "#0165ff" : "#000",
-        borderRadius: "4px",
-        padding: "4px",
-        borderStyle: "solid",
-        borderColor: "#0165ff",
-        fontWeight: event.isSelected ? "bold" : "400",
-        borderLeftWidth: event.isSelected ? 6 : 2,
-        borderLeftColor: event.isSelected ? "#0165ff" : "#0165ff",
-      },
+      style,
     };
   };
 
-  const handleRangeChange = (dates, dateStrings) => {
-    const start = dayjs(dates?.[0]);
-    const end = dayjs(dates?.[1]);
+  // Columns for doctor schedule modal
+  const scheduleColumns = [
+    {
+      title: "Ngày",
+      dataIndex: "date",
+      key: "date",
+      render: (text) => moment(text).format("DD/MM/YYYY"),
+    },
+    {
+      title: "Thứ",
+      dataIndex: "date_of_week",
+      key: "date_of_week",
+    },
+    {
+      title: "Ca làm việc",
+      dataIndex: "shift_type",
+      key: "shift_type",
+      render: (text) => {
+        let color = "blue";
+        let label = "Ca sáng";
 
-    const dateArray = [];
-    let currentDate = start.clone();
-    while (currentDate.isBefore(end) || currentDate.isSame(end, "day")) {
-      dateArray.push(currentDate.clone());
-      currentDate = currentDate.add(1, "days");
-    }
-    setDateTimeRange(dateArray?.map((date) => date.format("YYYY-MM-DD")));
+        if (text === "afternoon") {
+          color = "green";
+          label = "Ca chiều";
+        } else if (text === "evening") {
+          color = "purple";
+          label = "Ca tối";
+        }
+
+        return <Tag color={color}>{label}</Tag>;
+      },
+    },
+    {
+      title: "Thời gian",
+      key: "time",
+      render: (_, record) => (
+        <span>
+          {moment(record.start_time, "HH:mm:ss").format("HH:mm")} -
+          {moment(record.end_time, "HH:mm:ss").format("HH:mm")}
+        </span>
+      ),
+    },
+    {
+      title: "Số lượng slot",
+      dataIndex: "appointmentSlots",
+      key: "appointmentSlots",
+      render: (slots) => slots?.length || 0,
+    },
+    {
+      title: "Đã đặt",
+      dataIndex: "appointmentSlots",
+      key: "bookedSlots",
+      render: (slots) => slots?.filter((slot) => slot.isBooked)?.length || 0,
+    },
+  ];
+
+  const showDoctorSchedules = () => {
+    setIsModalVisible(true);
   };
-
-  const groupDatesByDayOfWeek = () => {
-    const groupedDates = {};
-    dateTimeRange?.forEach((date) => {
-      const dayOfWeek = dayjs(date).format("dddd");
-      if (!groupedDates[dayOfWeek]) {
-        groupedDates[dayOfWeek] = [];
-      }
-      groupedDates[dayOfWeek].push(date);
-    });
-    return groupedDates;
-  };
-
-  function filterByDayOfWeek(dates, dayOfWeek) {
-    return dates.filter((date) => {
-      const day = new Date(date).getDay();
-      return day === dayOfWeek;
-    });
-  }
 
   return (
     <div
       style={{
-        padding: 24,
-        background: "#fff",
-        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        backgroundColor: "#fff",
+        padding: "20px",
+        borderRadius: "10px",
       }}
     >
       <h2 style={{ textAlign: "center", textTransform: "uppercase" }}>
-        Lịch làm việc
+        Lịch làm việc của bác sĩ
       </h2>
-      <div style={{ display: "flex", flexDirection: "row", gap: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          gap: 10,
+        }}
+      >
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             gap: 10,
-            backgroundColor: "#fff",
-            borderWidth: 1,
-            borderColor: "#797979",
-            borderStyle: "solid",
-            padding: "20px",
-            borderRadius: "10px",
+            width: "20%",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -368,6 +479,15 @@ const ScheduleDoctor = () => {
                 </Option>
               ))}
             </Select>
+            {selectedDoctor && (
+              <Button
+                type="link"
+                onClick={showDoctorSchedules}
+                style={{ marginTop: 5 }}
+              >
+                Xem lịch làm việc
+              </Button>
+            )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <label
@@ -477,6 +597,40 @@ const ScheduleDoctor = () => {
           />
         </div>
       </div>
+
+      {/* Modal hiển thị lịch làm việc của bác sĩ */}
+      <Modal
+        title={`Lịch làm việc của bác sĩ ${
+          doctorList.find((d) => d.id === selectedDoctor)?.fullname || ""
+        }`}
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        width={800}
+        footer={[
+          <Button key="close" onClick={() => setIsModalVisible(false)}>
+            Đóng
+          </Button>,
+        ]}
+      >
+        {loadingSchedules ? (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <Spin size="large" />
+            <p>Đang tải lịch làm việc...</p>
+          </div>
+        ) : doctorSchedules.length > 0 ? (
+          <Table
+            dataSource={doctorSchedules}
+            columns={scheduleColumns}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+          />
+        ) : (
+          <Empty
+            description="Bác sĩ chưa có lịch làm việc"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

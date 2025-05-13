@@ -356,12 +356,6 @@ const ListDoctors = () => {
       >
         {viewDoctor && (
           <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-            <div>
-              <Typography.Text strong>Mã chứng chỉ hành nghề</Typography.Text>
-              <Typography.Text style={{ display: "block", marginTop: 8 }}>
-                {viewDoctor.licenseCode || "Chưa cung cấp"}
-              </Typography.Text>
-            </div>
             <Row gutter={16}>
               <Col span={12}>
                 <div>
@@ -429,7 +423,9 @@ const ListDoctors = () => {
               <Typography.Text strong>Giá khám</Typography.Text>
               <Typography.Text style={{ display: "block", marginTop: 8 }}>
                 {viewDoctor.consultation_fee[0]
-                  ? `${Number(viewDoctor.consultation_fee[0]).toLocaleString()} VNĐ`
+                  ? `${Number(
+                      viewDoctor.consultation_fee[0]
+                    ).toLocaleString()} VNĐ`
                   : "Chưa cung cấp"}
               </Typography.Text>
             </div>

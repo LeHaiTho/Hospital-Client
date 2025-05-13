@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
 import SpecialtyForm from "../../features/hospital/components/SpecialtyForm";
-import { Table, Space, Tooltip, Button, Card, Row, Col, Input } from "antd";
+import {
+  Table,
+  Space,
+  Tooltip,
+  Button,
+  Card,
+  Row,
+  Col,
+  Input,
+  Modal,
+} from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axiosConfig from "../../apis/axiosConfig";
 import { truncateDescription } from "../../utils/common";
@@ -12,20 +22,47 @@ import { RiDeleteBin5Line } from "react-icons/ri";
 const SpecialtyInfo = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [specialties, setSpecialties] = useState([]);
+  const [editingSpecialty, setEditingSpecialty] = useState(null);
+  const [searchText, setSearchText] = useState("");
 
   const fetchData = async () => {
     try {
+      setIsLoading(true);
       const response = await axiosConfig.get("/hospital-specialties/list");
       setSpecialties(response.specialties);
-      console.log("/hospital-specialties/list", response.specialties);
+      setEditingSpecialty(null);
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleEdit = (id) => {
+    const specialty = specialties.find((item) => item.id === id);
+    if (specialty) {
+      setEditingSpecialty(specialty);
+    }
+  };
+
+  const handleSearch = (e) => {
+    setSearchText(e.target.value);
+  };
+
+  // Lấy danh sách các specialty_id đã có dịch vụ
+  const getExistingSpecialtyIds = () => {
+    return specialties.map((specialty) => specialty.specialty_id);
+  };
+
+  const filteredSpecialties = specialties.filter(
+    (specialty) =>
+      specialty.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      specialty.description.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   const columns = [
     {
@@ -95,14 +132,6 @@ const SpecialtyInfo = () => {
               type="text"
             />
           </Tooltip>
-
-          <Tooltip placement="bottom" title="Xóa">
-            <Button
-              icon={<RiDeleteBin5Line size={22} color="#ff0000" />}
-              onClick={() => handleDelete(record.id)}
-              type="text"
-            />
-          </Tooltip>
         </div>
       ),
     },
@@ -124,7 +153,11 @@ const SpecialtyInfo = () => {
           width: "30%",
         }}
       >
-        <SpecialtyForm onFinish={fetchData} />
+        <SpecialtyForm
+          onFinish={fetchData}
+          editingSpecialty={editingSpecialty}
+          existingSpecialties={getExistingSpecialtyIds()}
+        />
       </div>
       <div
         style={{
@@ -145,15 +178,18 @@ const SpecialtyInfo = () => {
             backgroundColor: "#D9D9D9",
           }}
           prefix={<FiSearch />}
+          value={searchText}
+          onChange={handleSearch}
         />
         <Table
           columns={columns}
           size="small"
           pagination={false}
-          dataSource={specialties.map((specialty) => ({
+          dataSource={filteredSpecialties.map((specialty) => ({
             ...specialty,
             key: specialty.id,
           }))}
+          loading={isLoading}
         />
       </div>
     </div>

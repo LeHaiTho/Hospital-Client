@@ -25,11 +25,13 @@ import { FileExcelOutlined, FilePdfOutlined } from "@ant-design/icons";
 moment.locale("vi");
 const WorkingSchedule = () => {
   const [events, setEvents] = useState([]);
-
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null); // Event to delete
   const [hospitalSchedule, setHospitalSchedule] = useState([]);
   const [openModal, setOpenModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [originalEvents, setOriginalEvents] = useState([]);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const fetchHospitalSchedule = async () => {
     try {
@@ -37,7 +39,9 @@ const WorkingSchedule = () => {
         "/working-days/get-hospital-schedule-for-calendar"
       );
       setHospitalSchedule(response);
-      setEvents(convertScheduleData(response));
+      const convertedEvents = convertScheduleData(response);
+      setEvents(convertedEvents);
+      setOriginalEvents(JSON.stringify(convertedEvents));
     } catch (error) {
       console.log(error);
     }
@@ -46,6 +50,14 @@ const WorkingSchedule = () => {
   useEffect(() => {
     fetchHospitalSchedule();
   }, []);
+
+  // Check for changes whenever events are updated
+  useEffect(() => {
+    if (originalEvents.length === 0) return;
+
+    const currentEvents = JSON.stringify(events);
+    setHasChanges(currentEvents !== originalEvents);
+  }, [events, originalEvents]);
 
   // convert data from backend to data for calendar
   const convertScheduleData = (data) => {
@@ -211,6 +223,7 @@ const WorkingSchedule = () => {
   };
   const handleSaveSchedule = async () => {
     if (events.length > 0) {
+      setLoading(true);
       const dayOfWeek = [
         "Monday",
         "Tuesday",
@@ -248,9 +261,18 @@ const WorkingSchedule = () => {
           notification.success({
             message: "Tạo lịch hoạt động thành công",
           });
+          // Cập nhật originalEvents để reset trạng thái hasChanges
+          setOriginalEvents(JSON.stringify(events));
+          setHasChanges(false);
         }
       } catch (error) {
         console.log(error);
+        notification.error({
+          message: "Lỗi khi lưu lịch hoạt động",
+          description: error.response?.data?.message || "Đã xảy ra lỗi",
+        });
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -469,7 +491,12 @@ const WorkingSchedule = () => {
           <Button type="text" onClick={() => setOpenModal(true)}>
             Thông tin chi tiết
           </Button>
-          <Button type="primary" onClick={handleSaveSchedule}>
+          <Button
+            type="primary"
+            onClick={handleSaveSchedule}
+            loading={loading}
+            disabled={!hasChanges || loading}
+          >
             Lưu lịch
           </Button>
         </div>

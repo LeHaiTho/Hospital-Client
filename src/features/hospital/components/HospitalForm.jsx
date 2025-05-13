@@ -58,12 +58,12 @@ const HospitalForm = () => {
           avatar: res.hospital.avatar,
           banner: res.hospital.banner,
         });
-        setDescription(res.hospital.description || "");
-        setAddress(res.hospital.address || "");
-        setLatitude(res.hospital.latitude || "");
-        setLongitude(res.hospital.longitude || "");
-        setPhone(res.hospital.phone || "");
-        if (res.hospital.avatar) {
+        setDescription(res.hospital?.description || "Chưa cập nhật thông tin");
+        setAddress(res.hospital?.address || "");
+        setLatitude(res.hospital?.latitude || "");
+        setLongitude(res.hospital?.longitude || "");
+        setPhone(res.hospital?.phone || "");
+        if (res.hospital?.avatar) {
           setAvatar([
             {
               uid: "-1",

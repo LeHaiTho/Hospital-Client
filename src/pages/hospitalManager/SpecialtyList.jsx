@@ -86,19 +86,6 @@ const SpecialtyList = () => {
       align: "center",
       ellipsis: true,
     },
-    {
-      title: "Hành động",
-      dataIndex: "action",
-      align: "center",
-      width: "20%",
-      render: (text, record) => (
-        <Button
-          type="text"
-          icon={<RiDeleteBinLine style={{ color: "#FE4225" }} size={20} />}
-          onClick={() => handleDelete(record.id)}
-        />
-      ),
-    },
   ];
 
   return (

@@ -18,6 +18,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   UploadOutlined,
+  SyncOutlined,
 } from "@ant-design/icons";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
@@ -233,6 +234,26 @@ const SpecialtiesList = ({
   handleOpenModal,
   isLoading,
 }) => {
+  const generateKeywords = async (id) => {
+    try {
+      message.loading({ content: "Đang tạo từ khóa...", key: "keywords" });
+      await axios.post(
+        `http://localhost:3000/specialties/generate-keywords/${id}`
+      );
+      message.success({
+        content: "Tạo từ khóa thành công",
+        key: "keywords",
+        duration: 2,
+      });
+    } catch (error) {
+      message.error({
+        content: error.response?.data?.message || "Lỗi khi tạo từ khóa",
+        key: "keywords",
+        duration: 2,
+      });
+    }
+  };
+
   const columns = [
     {
       title: "ID",
@@ -308,26 +329,44 @@ const SpecialtiesList = ({
       ),
     },
     {
-      title: "Hành động",
+      title: "Thao tác",
       key: "action",
       align: "center",
-      width: 120,
+      width: 200,
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
           <Tooltip title="Chỉnh sửa">
-            <Button
+            <ActionButton
+              type="primary"
               icon={<EditOutlined />}
               onClick={() => handleEdit(record.id)}
-              type="text"
-              style={{ color: "#0165fc" }}
+              size="small"
             />
           </Tooltip>
           <Tooltip title="Xóa">
-            <Button
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record.id)}
-              type="text"
+            <ActionButton
+              type="primary"
               danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                Modal.confirm({
+                  title: "Xác nhận xóa",
+                  content: "Bạn có chắc chắn muốn xóa chuyên khoa này?",
+                  okText: "Xóa",
+                  okType: "danger",
+                  cancelText: "Hủy",
+                  onOk: () => handleDelete(record.id),
+                });
+              }}
+              size="small"
+            />
+          </Tooltip>
+          <Tooltip title="Tạo từ khóa">
+            <ActionButton
+              type="default"
+              icon={<SyncOutlined />}
+              onClick={() => generateKeywords(record.id)}
+              size="small"
             />
           </Tooltip>
         </Space>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Scanner from "react-qr-barcode-scanner";
 import {
   Col,
@@ -54,6 +54,47 @@ const ExamResult = () => {
     },
     imagingDiagnostics: [],
   });
+
+  // Thêm state để kiểm tra tính hợp lệ của form
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Cập nhật hàm validateForm để bỏ kiểm tra trường recommendation
+  const validateForm = useCallback(() => {
+    // Kiểm tra có mã appointment code và thông tin khách hàng
+    if (!data || !customerInfo) {
+      return false;
+    }
+
+    // Kiểm tra các trường bắt buộc trong form
+    const { healthCheckInfo, examResults } = formData;
+
+    // Kiểm tra thông tin sức khỏe
+    if (
+      !healthCheckInfo.weight ||
+      !healthCheckInfo.height ||
+      !healthCheckInfo.bloodPressure ||
+      !healthCheckInfo.heartRate
+    ) {
+      return false;
+    }
+
+    // Kiểm tra kết quả khám - bỏ kiểm tra recommendation
+    if (
+      !examResults[0].description ||
+      !examResults[0].findings
+      // Đã bỏ kiểm tra recommendation
+    ) {
+      return false;
+    }
+
+    return true;
+  }, [data, customerInfo, formData]);
+
+  // Cập nhật tính hợp lệ của form khi formData thay đổi
+  useEffect(() => {
+    setIsFormValid(validateForm());
+  }, [formData, data, customerInfo, validateForm]);
 
   const handleScan = async (result) => {
     try {
@@ -112,7 +153,15 @@ const ExamResult = () => {
     console.error(err);
   };
 
+  // Cập nhật hàm onFinish
   const onFinish = async () => {
+    if (!isFormValid) {
+      message.error("Vui lòng nhập đầy đủ thông tin trước khi lưu");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     const formDataToSend = new FormData();
 
     // Thêm dữ liệu JSON
@@ -133,10 +182,8 @@ const ExamResult = () => {
 
     // Thêm các file vào FormData với trường "files"
     formData.imagingDiagnostics.forEach((diag) => {
-      formDataToSend.append("files", diag.file); // Sử dụng "files" thay vì `files[${index}]`
+      formDataToSend.append("files", diag.file);
     });
-
-    console.log("formDataToSend", formDataToSend.get("data"));
 
     try {
       const res = await axiosConfig.post(
@@ -156,12 +203,28 @@ const ExamResult = () => {
           duration: 3,
           icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
         });
+
+        // Reset form và dữ liệu
+        form.resetFields();
+        setFormData({
+          appointment: { id: "", status: "completed" },
+          healthCheckInfo: {
+            weight: "",
+            height: "",
+            bloodPressure: "",
+            heartRate: "",
+          },
+          examResults: [{ description: "", findings: "", recommendation: "" }],
+          prescriptions: {
+            items: [
+              { medication: "", dosage: "", quantity: "", instructions: "" },
+            ],
+          },
+          imagingDiagnostics: [],
+        });
+        setData("");
+        setCustomerInfo(null);
       }
-      form.resetFields();
-      setFormData({
-        ...formData,
-        imagingDiagnostics: [],
-      });
     } catch (error) {
       console.log(error);
       notification.error({
@@ -170,6 +233,8 @@ const ExamResult = () => {
         placement: "topRight",
         duration: 3,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -421,27 +486,6 @@ const ExamResult = () => {
               </Col>
             </Row>
 
-            <Form.Item
-              label="Chỉ định"
-              name="recommendation"
-              rules={[{ required: true, message: "Vui lòng nhập chỉ định" }]}
-            >
-              <Input.TextArea
-                value={formData.examResults[0].recommendation}
-                onChange={(e) => {
-                  setFormData({
-                    ...formData,
-                    examResults: [
-                      {
-                        ...formData.examResults[0],
-                        recommendation: e.target.value,
-                      },
-                    ],
-                  });
-                }}
-              />
-            </Form.Item>
-
             <Form.Item label="Đơn thuốc">
               {formData.prescriptions.items.map((item, index) => (
                 <div
@@ -556,63 +600,6 @@ const ExamResult = () => {
               </Button>
             </Form.Item>
 
-            {/* <Form.Item>
-              <input
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                accept=".jpg,.png,.jpeg"
-              />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                }}
-              >
-                {formData.imagingDiagnostics.map((diag, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      marginBottom: "1em",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      display: "flex",
-                      gap: 10,
-                      width: "45%",
-                    }}
-                  >
-                    <p style={{ width: "100px" }}>File: {diag.file.name}</p>
-                    <input
-                      style={{
-                        width: "200px",
-                        padding: 8,
-                        borderRadius: 10,
-                        color: "black",
-                        border: "1px solid #ccc",
-                      }}
-                      type="text"
-                      placeholder="Mô tả"
-                      value={diag.description}
-                      onChange={(e) =>
-                        handleDiagnosticChange(
-                          index,
-                          "description",
-                          e.target.value
-                        )
-                      }
-                    />
-                    <Button
-                      type="text"
-                      onClick={() => handleRemoveDiagnostic(index)}
-                    >
-                      <DeleteOutlined style={{ color: "red" }} />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </Form.Item> */}
             <Form.Item>
               <input
                 type="file"
@@ -682,8 +669,13 @@ const ExamResult = () => {
               </div>
             </Form.Item>
 
-            <Button type="primary" htmlType="submit">
-              Lưu thông tin
+            <Button
+              type="primary"
+              htmlType="submit"
+              disabled={!isFormValid || isSubmitting}
+              loading={isSubmitting}
+            >
+              {isSubmitting ? "Đang lưu..." : "Lưu thông tin"}
             </Button>
           </Form>
         </Card>

@@ -82,6 +82,7 @@ const HospitalAdminPage = () => {
 
   const handleOk = async (values) => {
     try {
+      setLoading(true);
       const response = await axios.post(
         "http://localhost:3000/hospitals/create-new",
         values
@@ -97,6 +98,8 @@ const HospitalAdminPage = () => {
         message: "Lỗi",
         description: error.response?.data?.message || "Đã xảy ra lỗi!",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -188,8 +191,8 @@ const HospitalAdminPage = () => {
             record?.isDeleted === false
               ? "green"
               : record.isActive === false
-                ? "red"
-                : "yellow"
+              ? "red"
+              : "yellow"
           }
         >
           {record.isActive &&
@@ -197,8 +200,8 @@ const HospitalAdminPage = () => {
           record?.isDeleted === false
             ? "Đang hoạt động"
             : record.isActive === false
-              ? "Đã khóa"
-              : "Chưa kích hoạt"}
+            ? "Đã khóa"
+            : "Chưa kích hoạt"}
         </Tag>
       ),
     },
@@ -274,7 +277,7 @@ const HospitalAdminPage = () => {
         onCancel={handleCancel}
         footer={null}
       >
-        <AddNewHospital onSubmit={handleOk} form={form} />
+        <AddNewHospital onSubmit={handleOk} form={form} loading={loading} />
       </Modal>
       <Table
         columns={columns}
@@ -287,7 +290,7 @@ const HospitalAdminPage = () => {
   );
 };
 
-const AddNewHospital = ({ onSubmit, form }) => {
+const AddNewHospital = ({ onSubmit, form, loading }) => {
   const handleSubmit = () => {
     form.validateFields().then((values) => {
       onSubmit(values);
@@ -313,7 +316,12 @@ const AddNewHospital = ({ onSubmit, form }) => {
       >
         <Input placeholder="Nhập email" />
       </Form.Item>
-      <Button type="primary" htmlType="submit" onClick={handleSubmit}>
+      <Button
+        type="primary"
+        htmlType="submit"
+        onClick={handleSubmit}
+        loading={loading}
+      >
         Thêm mới
       </Button>
     </Form>

@@ -13,10 +13,11 @@ import {
 import { UploadOutlined } from "@ant-design/icons";
 import axiosConfig from "../../../apis/axiosConfig";
 
-const SpecialtyForm = ({ onFinish, initialValues }) => {
+const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [specialties, setSpecialties] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const getSpecialties = async () => {
@@ -34,20 +35,20 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
   }, []);
 
   useEffect(() => {
-    if (initialValues) {
+    if (editingSpecialty) {
       form.setFieldsValue({
-        specialty: initialValues.specialty,
-        name: initialValues.name,
-        description: initialValues.description,
-        consultation_fee: initialValues.consultation_fee,
+        specialty: editingSpecialty.specialty_id,
+        name: editingSpecialty.name,
+        description: editingSpecialty.description,
+        consultation_fee: editingSpecialty.consultation_fee,
       });
-      if (initialValues.image) {
+      if (editingSpecialty.image) {
         setFileList([
           {
             uid: "-1",
             name: "image.png",
             status: "done",
-            url: `http://localhost:3000${initialValues.image}`,
+            url: `http://localhost:3000${editingSpecialty.image}`,
           },
         ]);
       }
@@ -55,16 +56,17 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
       form.resetFields();
       setFileList([]);
     }
-  }, [initialValues, form]);
+  }, [editingSpecialty, form]);
 
   const handleFinish = async (values) => {
-    if (fileList.length === 0) {
+    if (!editingSpecialty && fileList.length === 0) {
       message.error("Vui lòng chọn ảnh thông tin chuyên khoa");
       return;
     }
 
+    setLoading(true);
     const formData = new FormData();
-    if (fileList[0].originFileObj) {
+    if (fileList[0]?.originFileObj) {
       formData.append("image", fileList[0].originFileObj);
     }
     formData.append("specialty", values.specialty);
@@ -73,11 +75,23 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
     formData.append("consultation_fee", values.consultation_fee);
 
     try {
-      const response = await axiosConfig.post(
-        "/hospital-specialties/create-new",
-        formData
-      );
-      message.success(response.message || "Thêm chuyên khoa thành công");
+      let response;
+      if (editingSpecialty) {
+        // Cập nhật
+        response = await axiosConfig.put(
+          `/hospital-specialties/update/${editingSpecialty.id}`,
+          formData
+        );
+        message.success("Cập nhật chuyên khoa thành công");
+      } else {
+        // Thêm mới
+        response = await axiosConfig.post(
+          "/hospital-specialties/create-new",
+          formData
+        );
+        message.success("Thêm chuyên khoa thành công");
+      }
+
       form.resetFields();
       setFileList([]);
       if (onFinish) {
@@ -85,13 +99,40 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
       }
     } catch (error) {
       console.log(error);
-      message.error("Thêm chuyên khoa thất bại, vui lòng thử lại!");
+      message.error(
+        editingSpecialty
+          ? "Cập nhật chuyên khoa thất bại, vui lòng thử lại!"
+          : "Thêm chuyên khoa thất bại, vui lòng thử lại!"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const onChangeImage = ({ fileList: newFileList }) => {
     setFileList(newFileList);
   };
+
+  // Lọc ra các chuyên khoa chưa có dịch vụ
+  const getAvailableSpecialties = () => {
+    if (!specialties || !existingSpecialties) return [];
+
+    // Nếu đang chỉnh sửa, vẫn hiển thị chuyên khoa hiện tại
+    if (editingSpecialty) {
+      return specialties.filter(
+        (specialty) =>
+          specialty.id === editingSpecialty.specialty_id ||
+          !existingSpecialties.includes(specialty.id)
+      );
+    }
+
+    // Nếu thêm mới, chỉ hiển thị các chuyên khoa chưa có dịch vụ
+    return specialties.filter(
+      (specialty) => !existingSpecialties.includes(specialty.id)
+    );
+  };
+
+  const availableSpecialties = getAvailableSpecialties();
 
   return (
     <Form
@@ -117,7 +158,9 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
           color: "#0165fc",
         }}
       >
-        DỊCH VỤ CHUYÊN KHOA CỦA CƠ SỞ Y TẾ
+        {editingSpecialty
+          ? "CẬP NHẬT DỊCH VỤ CHUYÊN KHOA"
+          : "THÊM DỊCH VỤ CHUYÊN KHOA"}
       </h2>
       <Divider />
       <Form.Item
@@ -128,8 +171,9 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
         <Select
           style={{ width: "100%", borderRadius: 8 }}
           placeholder="Chọn chuyên khoa"
+          disabled={editingSpecialty}
         >
-          {specialties.map((item) => (
+          {availableSpecialties.map((item) => (
             <Select.Option key={item.id} value={item.id}>
               {item.name}
             </Select.Option>
@@ -155,7 +199,7 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
         label="Ảnh thông tin gói dịch vụ"
         rules={[
           {
-            required: !initialValues,
+            required: !editingSpecialty,
             message: "Vui lòng chọn ảnh thông tin gói dịch vụ",
           },
         ]}
@@ -224,6 +268,7 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
         <Button
           type="primary"
           htmlType="submit"
+          loading={loading}
           style={{
             width: "100%",
             borderRadius: 8,
@@ -231,9 +276,27 @@ const SpecialtyForm = ({ onFinish, initialValues }) => {
             borderColor: "#0165fc",
           }}
         >
-          {initialValues ? "Cập nhật" : "Thêm mới"}
+          {editingSpecialty ? "Cập nhật" : "Thêm mới"}
         </Button>
       </Form.Item>
+
+      {editingSpecialty && (
+        <Button
+          type="default"
+          onClick={() => {
+            form.resetFields();
+            setFileList([]);
+            onFinish();
+          }}
+          style={{
+            width: "100%",
+            borderRadius: 8,
+            marginTop: 8,
+          }}
+        >
+          Hủy chỉnh sửa
+        </Button>
+      )}
     </Form>
   );
 };

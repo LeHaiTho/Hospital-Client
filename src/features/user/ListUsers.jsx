@@ -201,11 +201,7 @@ const ListUsers = () => {
       dataIndex: "fullname",
       key: "fullname",
     },
-    {
-      title: "Tên đăng nhập",
-      dataIndex: "username",
-      key: "username",
-    },
+
     {
       title: "Email",
       dataIndex: "email",
@@ -216,11 +212,7 @@ const ListUsers = () => {
       dataIndex: "phone",
       key: "phone",
     },
-    {
-      title: "Vai trò",
-      dataIndex: "role",
-      key: "role",
-    },
+
     {
       title: "Trạng thái",
       dataIndex: "isActivated",
