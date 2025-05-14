@@ -9,8 +9,14 @@ import {
   Divider,
   Image,
   message,
+  Popconfirm,
+  Space,
 } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import {
+  UploadOutlined,
+  DeleteOutlined,
+  EditOutlined,
+} from "@ant-design/icons";
 import axiosConfig from "../../../apis/axiosConfig";
 
 const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
@@ -18,6 +24,7 @@ const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
   const [fileList, setFileList] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const getSpecialties = async () => {
@@ -109,6 +116,31 @@ const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
     }
   };
 
+  // Hàm xử lý xóa chuyên khoa
+  const handleDelete = async () => {
+    if (!editingSpecialty) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      await axiosConfig.patch(
+        `/hospital-specialties/soft-delete/${editingSpecialty.id}`
+      );
+      message.success("Xóa chuyên khoa thành công");
+      form.resetFields();
+      setFileList([]);
+      if (onFinish) {
+        onFinish();
+      }
+    } catch (error) {
+      console.log(error);
+      message.error("Xóa chuyên khoa thất bại, vui lòng thử lại!");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const onChangeImage = ({ fileList: newFileList }) => {
     setFileList(newFileList);
   };
@@ -149,19 +181,26 @@ const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
       }}
       layout="vertical"
     >
-      <h2
+      <div
         style={{
-          fontSize: "16px",
-          fontWeight: "500",
-          textTransform: "uppercase",
-          textAlign: "center",
-          color: "#0165fc",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        {editingSpecialty
-          ? "CẬP NHẬT DỊCH VỤ CHUYÊN KHOA"
-          : "THÊM DỊCH VỤ CHUYÊN KHOA"}
-      </h2>
+        <h2
+          style={{
+            fontSize: "16px",
+            fontWeight: "500",
+            textTransform: "uppercase",
+            color: "#0165fc",
+          }}
+        >
+          {editingSpecialty
+            ? "CẬP NHẬT DỊCH VỤ CHUYÊN KHOA"
+            : "THÊM DỊCH VỤ CHUYÊN KHOA"}
+        </h2>
+      </div>
       <Divider />
       <Form.Item
         name="specialty"
@@ -264,13 +303,13 @@ const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
         />
       </Form.Item>
 
-      <Form.Item>
+      <Space style={{ marginTop: 16 }}>
         <Button
           type="primary"
           htmlType="submit"
           loading={loading}
+          icon={<EditOutlined />}
           style={{
-            width: "100%",
             borderRadius: 8,
             backgroundColor: "#0165fc",
             borderColor: "#0165fc",
@@ -278,25 +317,38 @@ const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
         >
           {editingSpecialty ? "Cập nhật" : "Thêm mới"}
         </Button>
-      </Form.Item>
 
-      {editingSpecialty && (
-        <Button
-          type="default"
-          onClick={() => {
-            form.resetFields();
-            setFileList([]);
-            onFinish();
-          }}
-          style={{
-            width: "100%",
-            borderRadius: 8,
-            marginTop: 8,
-          }}
-        >
-          Hủy chỉnh sửa
-        </Button>
-      )}
+        {editingSpecialty && (
+          <>
+            <Popconfirm
+              title="Xóa chuyên khoa"
+              description="Bạn có chắc chắn muốn xóa chuyên khoa này không?"
+              onConfirm={handleDelete}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true, loading: deleteLoading }}
+            >
+              <Button danger icon={<DeleteOutlined />} loading={deleteLoading}>
+                Xóa
+              </Button>
+            </Popconfirm>
+
+            <Button
+              type="default"
+              onClick={() => {
+                form.resetFields();
+                setFileList([]);
+                onFinish();
+              }}
+              style={{
+                borderRadius: 8,
+              }}
+            >
+              Hủy chỉnh sửa
+            </Button>
+          </>
+        )}
+      </Space>
     </Form>
   );
 };
