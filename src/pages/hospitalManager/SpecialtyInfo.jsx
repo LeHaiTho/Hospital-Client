@@ -10,6 +10,8 @@ import {
   Col,
   Input,
   Modal,
+  Popconfirm,
+  message,
 } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axiosConfig from "../../apis/axiosConfig";
@@ -24,6 +26,7 @@ const SpecialtyInfo = () => {
   const [specialties, setSpecialties] = useState([]);
   const [editingSpecialty, setEditingSpecialty] = useState(null);
   const [searchText, setSearchText] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -49,11 +52,24 @@ const SpecialtyInfo = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    setDeleteLoading(true);
+    try {
+      await axiosConfig.patch(`/hospital-specialties/soft-delete/${id}`);
+      message.success("Xóa chuyên khoa thành công");
+      fetchData();
+    } catch (error) {
+      console.log(error);
+      message.error("Xóa chuyên khoa thất bại, vui lòng thử lại!");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const handleSearch = (e) => {
     setSearchText(e.target.value);
   };
 
-  // Lấy danh sách các specialty_id đã có dịch vụ
   const getExistingSpecialtyIds = () => {
     return specialties.map((specialty) => specialty.specialty_id);
   };
@@ -122,15 +138,31 @@ const SpecialtyInfo = () => {
       key: "action",
       dataIndex: "action",
       align: "center",
-      width: "10%",
+      width: "15%",
       render: (text, record) => (
-        <div>
+        <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
           <Tooltip placement="bottom" title="Chỉnh sửa">
             <Button
               icon={<LiaEditSolid size={24} color="#000" />}
               onClick={() => handleEdit(record.id)}
               type="text"
             />
+          </Tooltip>
+          <Tooltip placement="bottom" title="Xóa">
+            <Popconfirm
+              title="Xóa chuyên khoa"
+              description="Bạn có chắc chắn muốn xóa chuyên khoa này không?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true, loading: deleteLoading }}
+            >
+              <Button
+                icon={<RiDeleteBin5Line size={22} color="#ff4d4f" />}
+                type="text"
+                danger
+              />
+            </Popconfirm>
           </Tooltip>
         </div>
       ),

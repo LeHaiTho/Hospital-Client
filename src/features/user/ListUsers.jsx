@@ -355,7 +355,7 @@ const ListUsers = () => {
                 ? moment(selectedUser.date_of_birth).format("DD/MM/YYYY")
                 : "Chưa cập nhật"}
             </Descriptions.Item>
-            <Descriptions.Item label="Tỉnh/Thành phố">
+            {/* <Descriptions.Item label="Tỉnh/Thành phố">
               {selectedUser.province || "Chưa cập nhật"}
             </Descriptions.Item>
             <Descriptions.Item label="Quận/Huyện">
@@ -363,7 +363,7 @@ const ListUsers = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Phường/Xã">
               {selectedUser.ward || "Chưa cập nhật"}
-            </Descriptions.Item>
+            </Descriptions.Item> */}
             <Descriptions.Item label="Trạng thái">
               {selectedUser.isActivated ? "Đã kích hoạt" : "Tạm khóa"}
             </Descriptions.Item>

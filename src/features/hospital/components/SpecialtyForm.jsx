@@ -9,14 +9,9 @@ import {
   Divider,
   Image,
   message,
-  Popconfirm,
   Space,
 } from "antd";
-import {
-  UploadOutlined,
-  DeleteOutlined,
-  EditOutlined,
-} from "@ant-design/icons";
+import { UploadOutlined, EditOutlined } from "@ant-design/icons";
 import axiosConfig from "../../../apis/axiosConfig";
 
 const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
@@ -24,7 +19,6 @@ const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
   const [fileList, setFileList] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const getSpecialties = async () => {
@@ -113,31 +107,6 @@ const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
       );
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Hàm xử lý xóa chuyên khoa
-  const handleDelete = async () => {
-    if (!editingSpecialty) {
-      return;
-    }
-
-    setDeleteLoading(true);
-    try {
-      await axiosConfig.patch(
-        `/hospital-specialties/soft-delete/${editingSpecialty.id}`
-      );
-      message.success("Xóa chuyên khoa thành công");
-      form.resetFields();
-      setFileList([]);
-      if (onFinish) {
-        onFinish();
-      }
-    } catch (error) {
-      console.log(error);
-      message.error("Xóa chuyên khoa thất bại, vui lòng thử lại!");
-    } finally {
-      setDeleteLoading(false);
     }
   };
 
@@ -319,34 +288,19 @@ const SpecialtyForm = ({ onFinish, editingSpecialty, existingSpecialties }) => {
         </Button>
 
         {editingSpecialty && (
-          <>
-            <Popconfirm
-              title="Xóa chuyên khoa"
-              description="Bạn có chắc chắn muốn xóa chuyên khoa này không?"
-              onConfirm={handleDelete}
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true, loading: deleteLoading }}
-            >
-              <Button danger icon={<DeleteOutlined />} loading={deleteLoading}>
-                Xóa
-              </Button>
-            </Popconfirm>
-
-            <Button
-              type="default"
-              onClick={() => {
-                form.resetFields();
-                setFileList([]);
-                onFinish();
-              }}
-              style={{
-                borderRadius: 8,
-              }}
-            >
-              Hủy chỉnh sửa
-            </Button>
-          </>
+          <Button
+            type="default"
+            onClick={() => {
+              form.resetFields();
+              setFileList([]);
+              onFinish();
+            }}
+            style={{
+              borderRadius: 8,
+            }}
+          >
+            Hủy chỉnh sửa
+          </Button>
         )}
       </Space>
     </Form>
