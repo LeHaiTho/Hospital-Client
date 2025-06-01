@@ -47,29 +47,6 @@ export const getDoctorDetailedExamResults = async (doctorId, params = {}) => {
   }
 };
 
-// Update detailed exam result
-export const updateDetailedExamResult = async (id, data) => {
-  try {
-    const response = await axiosConfig.put(
-      `/detailed-exam-results/${id}`,
-      data
-    );
-    return response;
-  } catch (error) {
-    throw error.response || error;
-  }
-};
-
-// Delete detailed exam result
-export const deleteDetailedExamResult = async (id) => {
-  try {
-    const response = await axiosConfig.delete(`/detailed-exam-results/${id}`);
-    return response;
-  } catch (error) {
-    throw error.response || error;
-  }
-};
-
 // Get patient exam history (optimized with ID-based search)
 export const getPatientExamHistory = async (requestData) => {
   try {
