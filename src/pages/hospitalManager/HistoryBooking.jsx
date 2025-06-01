@@ -34,14 +34,16 @@ const HistoryBooking = () => {
     current: 1,
     pageSize: 10,
     total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
   });
   const [filters, setFilters] = useState({
     search: "",
     doctorId: null,
     dateRange: [],
     status: null,
-    period: null, // For week/month
-    selectedMonth: moment().month() + 1, // Thêm selectedMonth với giá trị mặc định là tháng hiện tại
+    selectedMonth: moment().month(),
   });
   console.log(filters);
   const {
@@ -83,16 +85,25 @@ const HistoryBooking = () => {
         "/appointments/get-history-booking",
         { params }
       );
+
+      console.log("API Response:", response); // Debug log
+
       setBookings(response?.data || []);
-      setPagination({
-        current: page,
-        pageSize,
-        total: response?.data?.total || 0,
-      });
+      setPagination((prev) => ({
+        ...prev,
+        current: response?.page || page,
+        pageSize: response?.limit || pageSize,
+        total: response?.total || 0,
+      }));
       calculateStats(response?.data || []);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       message.error("Không thể tải danh sách lịch khám!");
+      setBookings([]);
+      setPagination((prev) => ({
+        ...prev,
+        total: 0,
+      }));
     } finally {
       setLoading(false);
     }
@@ -100,23 +111,35 @@ const HistoryBooking = () => {
 
   // Calculate statistics
   const calculateStats = (bookingsToProcess) => {
+    console.log("Calculating stats for bookings:", bookingsToProcess);
+
     const statsData = doctors.map((doctor) => {
       const doctorBookings = bookingsToProcess.filter(
         (b) => b.doctorName === doctor.name
       );
+
       return {
         key: doctor.id,
         doctorName: doctor.name,
         total: doctorBookings.length,
-        completed: doctorBookings.filter((b) => b.status === "completed")
-          .length,
-        pending: doctorBookings.filter((b) => b.status === "pending").length,
-        cancelled: doctorBookings.filter((b) => b.status === "cancelled")
-          .length,
+        completed: doctorBookings.filter(
+          (b) => b.originalStatus === "completed"
+        ).length,
+        pending: doctorBookings.filter(
+          (b) =>
+            b.originalStatus === "pending" || b.originalStatus === "confirmed"
+        ).length,
+        cancelled: doctorBookings.filter(
+          (b) => b.originalStatus === "cancelled"
+        ).length,
       };
     });
-    setStats(statsData);
+
+    // Chỉ hiển thị bác sĩ có ít nhất 1 lịch hẹn trong khoảng thời gian được chọn
+    const filteredStats = statsData.filter((stat) => stat.total > 0);
+    setStats(filteredStats);
   };
+  console.log("stats", stats);
 
   // Initialize data
   useEffect(() => {
@@ -131,16 +154,13 @@ const HistoryBooking = () => {
 
   // Apply filters for booking list
   const handleSearch = () => {
-    if (filters) {
-      setPagination((prev) => ({ ...prev, current: 1 }));
-      fetchBookings(1, pagination.pageSize);
-    } else {
-      fetchBookings();
-    }
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchBookings(1, pagination.pageSize);
   };
 
   // Handle table pagination and sorting for booking list
   const handleTableChange = (newPagination, filters, sorter) => {
+    console.log("Table change:", newPagination); // Debug log
     fetchBookings(newPagination.current, newPagination.pageSize);
   };
 
@@ -148,19 +168,11 @@ const HistoryBooking = () => {
   const handleStatsFilter = async () => {
     setLoading(true);
     try {
-      const { doctorId, period, selectedMonth } = filters;
+      const { doctorId, selectedMonth } = filters;
       let adjustedDateRange = [];
 
-      // Adjust date range based on period or selectedMonth
-      if (period === "week") {
-        adjustedDateRange = [moment().startOf("week"), moment().endOf("week")];
-      } else if (period === "month") {
-        adjustedDateRange = [
-          moment().startOf("month"),
-          moment().endOf("month"),
-        ];
-      } else if (selectedMonth !== null) {
-        // Nếu chọn tháng cụ thể
+      // Lọc theo tháng được chọn dựa trên appointment_date
+      if (selectedMonth !== null) {
         const currentYear = moment().year();
         adjustedDateRange = [
           moment([currentYear, selectedMonth, 1]), // Ngày đầu tiên của tháng đã chọn
@@ -175,6 +187,9 @@ const HistoryBooking = () => {
           endDate: moment(adjustedDateRange[1]).format("YYYY-MM-DD"),
         }),
       };
+
+      console.log("Stats filter params:", params);
+
       const response = await axiosConfig.get(
         "/appointments/get-history-booking",
         { params }
@@ -194,58 +209,99 @@ const HistoryBooking = () => {
     label: `Tháng ${i + 1}`,
   }));
 
+  // Helper function to get status color and display
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case "Lịch sắp tới":
+        return {
+          color: "blue",
+          backgroundColor: "#e6f7ff",
+          borderColor: "#91d5ff",
+        };
+      case "Đã hủy":
+        return {
+          color: "red",
+          backgroundColor: "#fff2e8",
+          borderColor: "#ffbb96",
+        };
+      case "Đã hoàn thành":
+        return {
+          color: "green",
+          backgroundColor: "#f6ffed",
+          borderColor: "#95de64",
+        };
+      default:
+        return {
+          color: "default",
+          backgroundColor: "#fafafa",
+          borderColor: "#d9d9d9",
+        };
+    }
+  };
+
   // Booking list columns
   const bookingColumns = [
     {
       title: "Mã đặt lịch",
-      dataIndex: "id",
-      key: "id",
+      dataIndex: "appointmentCode", // Changed from "id" to "appointmentCode"
+      key: "appointmentCode",
+      width: 120,
     },
     {
       title: "Bệnh nhân",
       dataIndex: "patientName",
       key: "patientName",
+      width: 150,
     },
     {
       title: "Bác sĩ",
       dataIndex: "doctorName",
       key: "doctorName",
+      width: 150,
     },
     {
       title: "Chuyên khoa",
       dataIndex: "specialty",
       key: "specialty",
+      width: 120,
     },
     {
-      title: "Thời gian",
-      dataIndex: "appointmentDate",
+      title: "Ngày khám",
+      dataIndex: "appointmentDate", // Ngày từ doctorSchedule.date
       key: "appointmentDate",
       sorter: true,
+      width: 110,
       render: (date) => {
-        const [datePart, timePart] = date.split(" ");
-        return `${datePart} ${timePart.split("-")[0].trim()}`;
+        return date || "N/A";
+      },
+    },
+    {
+      title: "Giờ khám",
+      dataIndex: "appointmentTime", // Giờ từ appointmentSlot
+      key: "appointmentTime",
+      width: 120,
+      render: (time) => {
+        return time || "N/A";
       },
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      width: 120,
       render: (status) => {
-        const color =
-          status === "completed"
-            ? "green"
-            : status === "cancelled"
-              ? "red"
-              : "blue";
+        const config = getStatusConfig(status);
         return (
           <Tag
-            color={color}
+            color={config.color}
             style={{
-              backgroundColor: color,
-              color: "white",
+              backgroundColor: config.backgroundColor,
+              borderColor: config.borderColor,
+              color: config.color === "default" ? "#000" : config.color,
+              border: `1px solid ${config.borderColor}`,
             }}
           >
-            {status.toUpperCase()}
+            {status}
           </Tag>
         );
       },
@@ -254,7 +310,9 @@ const HistoryBooking = () => {
       title: "Giá khám",
       dataIndex: "price",
       key: "price",
-      render: (price) => `${parseFloat(price).toLocaleString("vi-VN")} VNĐ`,
+      width: 120,
+      render: (price) =>
+        price ? `${parseFloat(price).toLocaleString("vi-VN")} VNĐ` : "N/A",
     },
   ];
 
@@ -264,26 +322,41 @@ const HistoryBooking = () => {
       title: "Bác sĩ",
       dataIndex: "doctorName",
       key: "doctorName",
+      width: 150,
     },
     {
       title: "Tổng số lịch khám",
       dataIndex: "total",
       key: "total",
+      width: 120,
+      render: (total) => (
+        <span style={{ fontWeight: "bold", color: "#1890ff" }}>{total}</span>
+      ),
+    },
+    {
+      title: "Lịch sắp tới",
+      dataIndex: "pending",
+      key: "pending",
+      width: 120,
+      render: (pending) => <span style={{ color: "#52c41a" }}>{pending}</span>,
     },
     {
       title: "Hoàn thành",
       dataIndex: "completed",
       key: "completed",
-    },
-    {
-      title: "Đang chờ",
-      dataIndex: "pending",
-      key: "pending",
+      width: 120,
+      render: (completed) => (
+        <span style={{ color: "#13c2c2" }}>{completed}</span>
+      ),
     },
     {
       title: "Đã hủy",
       dataIndex: "cancelled",
       key: "cancelled",
+      width: 100,
+      render: (cancelled) => (
+        <span style={{ color: "#f5222d" }}>{cancelled}</span>
+      ),
     },
   ];
 
@@ -303,6 +376,13 @@ const HistoryBooking = () => {
           style={{ width: "100%", marginBottom: 16 }}
         >
           <Space wrap>
+            <Input
+              placeholder="Tìm kiếm bệnh nhân, bác sĩ, mã lịch hẹn..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
+              style={{ width: 250 }}
+              prefix={<SearchOutlined />}
+            />
             <Select
               placeholder="Chọn bác sĩ"
               value={filters.doctorId}
@@ -316,6 +396,12 @@ const HistoryBooking = () => {
                 </Option>
               ))}
             </Select>
+            <RangePicker
+              value={filters.dateRange}
+              onChange={(dates) => handleFilterChange("dateRange", dates || [])}
+              format="DD/MM/YYYY"
+              placeholder={["Từ ngày", "Đến ngày"]}
+            />
             <Select
               placeholder="Chọn trạng thái"
               value={filters.status}
@@ -323,12 +409,12 @@ const HistoryBooking = () => {
               style={{ width: 150 }}
               allowClear
             >
-              <Option value="completed">Hoàn thành</Option>
+              <Option value="pending">Lịch sắp tới</Option>
               <Option value="cancelled">Đã hủy</Option>
-              <Option value="pending">Đang chờ</Option>
+              <Option value="completed">Hoàn thành</Option>
             </Select>
             <Button type="primary" onClick={handleSearch}>
-              Lọc
+              Tìm kiếm
             </Button>
           </Space>
         </Space>
@@ -342,6 +428,8 @@ const HistoryBooking = () => {
               pagination={pagination}
               onChange={handleTableChange}
               rowKey="id"
+              scroll={{ x: 1000 }}
+              size="middle"
             />
           </Spin>
         </TabPane>
@@ -361,32 +449,10 @@ const HistoryBooking = () => {
                   </Option>
                 ))}
               </Select>
-              {/* <Select
-                placeholder="Chọn khoảng thời gian"
-                value={filters.period}
-                onChange={(value) => {
-                  handleFilterChange("period", value);
-                  // Reset selectedMonth nếu đã chọn period
-                  if (value) {
-                    handleFilterChange("selectedMonth", null);
-                  }
-                }}
-                style={{ width: 150 }}
-                allowClear
-              >
-                <Option value="week">Tuần</Option>
-                <Option value="month">Tháng hiện tại</Option>
-              </Select> */}
               <Select
                 placeholder="Chọn tháng cụ thể"
                 value={filters.selectedMonth}
-                onChange={(value) => {
-                  handleFilterChange("selectedMonth", value);
-                  // Reset period nếu đã chọn tháng cụ thể
-                  if (value !== null) {
-                    handleFilterChange("period", null);
-                  }
-                }}
+                onChange={(value) => handleFilterChange("selectedMonth", value)}
                 style={{ width: 150 }}
                 allowClear
               >
@@ -400,6 +466,7 @@ const HistoryBooking = () => {
                 Lọc thống kê
               </Button>
             </Space>
+
             <Spin spinning={loading}>
               <Table
                 columns={statsColumns}
@@ -410,6 +477,8 @@ const HistoryBooking = () => {
                 }
                 pagination={false}
                 rowKey="key"
+                scroll={{ x: 800 }}
+                size="middle"
               />
             </Spin>
           </Space>

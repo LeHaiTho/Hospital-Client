@@ -4,7 +4,7 @@ export const handleNavigation = (role, navigate) => {
       navigate("/admin/hospitals/list");
       break;
     case "doctor":
-      navigate("/doctor");
+      navigate("/doctor/appointments");
       break;
     case "manager":
       navigate("/manager/hospital-info");
