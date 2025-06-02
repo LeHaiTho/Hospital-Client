@@ -396,12 +396,7 @@ const HistoryBooking = () => {
                 </Option>
               ))}
             </Select>
-            <RangePicker
-              value={filters.dateRange}
-              onChange={(dates) => handleFilterChange("dateRange", dates || [])}
-              format="DD/MM/YYYY"
-              placeholder={["Từ ngày", "Đến ngày"]}
-            />
+
             <Select
               placeholder="Chọn trạng thái"
               value={filters.status}
