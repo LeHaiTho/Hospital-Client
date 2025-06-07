@@ -64,7 +64,53 @@ const DoctorList = () => {
       console.error("Error fetching doctor list:", error);
     }
   };
-
+  // Check license code
+  const checkLicenseCode = async (licenseCode) => {
+    try {
+      const response = await axiosConfig.get(
+        `/doctors/get-doctor-by-license-code?licenseCode=${licenseCode}`
+      );
+      console.log(response);
+      if (response.doctorDetail) {
+        form.setFieldsValue({
+          fullname: response.doctorDetail.fullname,
+          phone: response.doctorDetail.phone,
+          email: response.doctorDetail.email,
+          description: response.doctorDetail.description,
+          gender: response.doctorDetail.gender,
+          birthday: response.doctorDetail.birthday
+            ? moment(response.doctorDetail.birthday, "YYYY-MM-DD")
+            : null,
+        });
+        setDoctorDetail(response.doctorDetail);
+        setFileList(
+          response.doctorDetail.avatar
+            ? [
+                {
+                  uid: "-1",
+                  name: "avatar",
+                  status: "done",
+                  url: `http://localhost:3000${response.doctorDetail.avatar}`,
+                },
+              ]
+            : []
+        );
+      } else {
+        form.setFieldsValue({
+          fullname: "",
+          phone: "",
+          email: "",
+          description: "",
+          gender: undefined,
+          birthday: null,
+        });
+        setDoctorDetail(null);
+        setFileList([]);
+      }
+    } catch (error) {
+      console.error("Error checking license code:", error);
+    }
+  };
   useEffect(() => {
     getDoctorList();
   }, []);
@@ -114,7 +160,7 @@ const DoctorList = () => {
     setEditDoctor(doctor);
     setDoctorDetail(null);
     form.setFieldsValue({
-      // licenseCode: doctor.licenseCode,
+      licenseCode: doctor.licenseCode,
       fullname: doctor.fullname,
       phone: doctor.phone,
       email: doctor.email,
@@ -148,21 +194,28 @@ const DoctorList = () => {
   };
 
   const onChangeImage = ({ fileList: newFileList }) => {
+    if (doctorDetail) {
+      return;
+    }
     setFileList(newFileList);
   };
 
   const handleFinish = async (values) => {
     try {
+      console.log(values);
       setLoading(true);
       const formData = new FormData();
-      if (fileList.length > 0 && fileList[0].originFileObj) {
+
+      // Chỉ append ảnh khi không phải bác sĩ có sẵn và có file mới
+      if (!doctorDetail && fileList.length > 0 && fileList[0].originFileObj) {
         formData.append("image", fileList[0].originFileObj);
       }
+
       formData.append("fullname", values.fullname);
       formData.append("phone", values.phone);
       formData.append("email", values.email);
       formData.append("gender", values.gender);
-      // formData.append("licenseCode", values.licenseCode);
+      formData.append("licenseCode", values.licenseCode);
       formData.append("specialty", values.specialty.join(","));
       formData.append(
         "birthday",
@@ -188,6 +241,7 @@ const DoctorList = () => {
       form.resetFields();
       setVisible(false);
       setFileList([]);
+      setDoctorDetail(null); // Reset doctorDetail
       NotificationComponent(
         "success",
         editMode ? "Cập nhật bác sĩ thành công" : "Thêm bác sĩ thành công"
@@ -245,6 +299,7 @@ const DoctorList = () => {
         </p>
       ),
     },
+
     {
       title: "Chuyên khoa",
       dataIndex: "specialties",
@@ -344,6 +399,7 @@ const DoctorList = () => {
       }}
     >
       <h2 style={{ textTransform: "uppercase" }}>Danh sách bác sĩ </h2>
+
       <Space
         direction="horizontal"
         size="middle"
@@ -414,6 +470,40 @@ const DoctorList = () => {
         <Form form={form} layout="vertical" onFinish={handleFinish}>
           <Row gutter={16}>
             <Col span={12}>
+              {!editMode && (
+                <Form.Item
+                  name="licenseCode"
+                  label="Mã chứng chỉ hành nghề"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập mã chứng chỉ" },
+                  ]}
+                >
+                  <Input
+                    placeholder="Nhập mã chứng chỉ"
+                    disabled={editMode}
+                    onBlur={
+                      editMode
+                        ? undefined
+                        : (e) => checkLicenseCode(e.target.value)
+                    }
+                  />
+                </Form.Item>
+              )}
+              {doctorDetail && (
+                <p
+                  style={{
+                    color: "#ff4d4f",
+                    marginTop: "-20px",
+                    fontSize: "12px",
+                  }}
+                >
+                  Bác sĩ đang làm việc tại cơ sở y tế khác. Các thông tin đã
+                  được tự động cập nhật, hãy cung cấp thông tin chuyên khoa khám
+                  của bác sĩ này tại cơ sở y tế của bạn.
+                </p>
+              )}
+            </Col>
+            <Col span={12}>
               <Form.Item
                 name="fullname"
                 label="Tên bác sĩ"
@@ -428,13 +518,33 @@ const DoctorList = () => {
                 />
               </Form.Item>
             </Col>
+            {/* <Col span={12}>
+              <Form.Item
+                name="licenseCode"
+                label="Mã chứng chỉ hành nghề"
+                rules={[
+                  {
+                    required: true,
+                    message: "Vui lòng nhập mã chứng chỉ hành nghề",
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="Nhập mã chứng chỉ hành nghề"
+                  disabled={doctorDetail}
+                  style={{ color: "#000" }}
+                />
+              </Form.Item>
+            </Col> */}
+          </Row>
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="avatar"
                 label="Ảnh đại diện"
                 rules={[
                   {
-                    required: !editMode,
+                    required: !editMode && !doctorDetail,
                     message: "Vui lòng chọn ảnh đại diện",
                   },
                 ]}
@@ -446,13 +556,17 @@ const DoctorList = () => {
                   maxCount={1}
                   accept=".jpg,.png,.jpeg"
                   beforeUpload={() => false}
+                  disabled={doctorDetail !== null}
                 >
-                  <Button icon={<UploadOutlined />}>Upload</Button>
+                  <Button
+                    icon={<UploadOutlined />}
+                    disabled={doctorDetail !== null}
+                  >
+                    {doctorDetail ? "Ảnh từ hồ sơ có sẵn" : "Upload"}
+                  </Button>
                 </Upload>
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="phone"
@@ -468,6 +582,8 @@ const DoctorList = () => {
                 />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="email"
@@ -481,8 +597,6 @@ const DoctorList = () => {
                 />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="birthday"
@@ -499,6 +613,8 @@ const DoctorList = () => {
                 />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="gender"
