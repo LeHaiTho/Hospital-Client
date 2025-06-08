@@ -114,7 +114,6 @@ const DoctorList = () => {
   useEffect(() => {
     getDoctorList();
   }, []);
-  console.log(doctorList);
   // Search doctors
   const handleSearch = (event) => {
     const value = event.target.value;
@@ -159,6 +158,11 @@ const DoctorList = () => {
     setEditMode(true);
     setEditDoctor(doctor);
     setDoctorDetail(null);
+
+    // Debug: log để kiểm tra giá trị licenseCode
+    console.log("Doctor data for edit:", doctor);
+    console.log("License code:", doctor.licenseCode);
+
     form.setFieldsValue({
       licenseCode: doctor.licenseCode,
       fullname: doctor.fullname,
@@ -170,6 +174,13 @@ const DoctorList = () => {
       birthday: doctor.birthday ? moment(doctor.birthday, "YYYY-MM-DD") : null,
       specialty: doctor.specialties?.map((item) => item.id),
     });
+
+    // Force form validation update để áp dụng rules mới
+    setTimeout(() => {
+      form.validateFields(["licenseCode"]).catch(() => {
+        // Ignore validation errors khi chuyển sang edit mode
+      });
+    }, 0);
     setFileList(
       doctor.avatar
         ? [
@@ -206,16 +217,34 @@ const DoctorList = () => {
       setLoading(true);
       const formData = new FormData();
 
-      // Chỉ append ảnh khi không phải bác sĩ có sẵn và có file mới
-      if (!doctorDetail && fileList.length > 0 && fileList[0].originFileObj) {
-        formData.append("image", fileList[0].originFileObj);
+      // Logic xử lý ảnh
+      if (editMode) {
+        // Trong chế độ edit, chỉ thêm ảnh mới nếu có
+        if (fileList.length > 0 && fileList[0].originFileObj) {
+          formData.append("image", fileList[0].originFileObj);
+        }
+      } else {
+        // Trong chế độ thêm mới, chỉ append ảnh khi không phải bác sĩ có sẵn và có file mới
+        if (!doctorDetail && fileList.length > 0 && fileList[0].originFileObj) {
+          formData.append("image", fileList[0].originFileObj);
+        }
       }
 
       formData.append("fullname", values.fullname);
       formData.append("phone", values.phone);
       formData.append("email", values.email);
       formData.append("gender", values.gender);
-      formData.append("licenseCode", values.licenseCode);
+
+      // Xử lý licenseCode: trong edit mode sử dụng giá trị hiện tại, không check
+      if (editMode) {
+        formData.append(
+          "licenseCode",
+          values.licenseCode || editDoctor.licenseCode
+        );
+      } else {
+        formData.append("licenseCode", values.licenseCode || "");
+      }
+
       formData.append("specialty", values.specialty.join(","));
       formData.append(
         "birthday",
@@ -470,26 +499,39 @@ const DoctorList = () => {
         <Form form={form} layout="vertical" onFinish={handleFinish}>
           <Row gutter={16}>
             <Col span={12}>
-              {!editMode && (
-                <Form.Item
-                  name="licenseCode"
-                  label="Mã chứng chỉ hành nghề"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập mã chứng chỉ" },
-                  ]}
-                >
-                  <Input
-                    placeholder="Nhập mã chứng chỉ"
-                    disabled={editMode}
-                    onBlur={
-                      editMode
-                        ? undefined
-                        : (e) => checkLicenseCode(e.target.value)
-                    }
-                  />
-                </Form.Item>
-              )}
-              {doctorDetail && (
+              <Form.Item
+                name="licenseCode"
+                label="Mã chứng chỉ hành nghề"
+                rules={
+                  editMode
+                    ? [] // Không có validation khi edit
+                    : [
+                        {
+                          required: true,
+                          message: "Vui lòng nhập mã chứng chỉ",
+                        },
+                      ]
+                }
+              >
+                <Input
+                  placeholder={
+                    editMode
+                      ? "Đã lưu trong hệ thống - không thể chỉnh sửa"
+                      : "Nhập mã chứng chỉ hành nghề"
+                  }
+                  disabled={editMode}
+                  style={{
+                    color: "#000",
+                    backgroundColor: editMode ? "#f5f5f5" : "#fff",
+                  }}
+                  onBlur={
+                    editMode
+                      ? undefined
+                      : (e) => checkLicenseCode(e.target.value)
+                  }
+                />
+              </Form.Item>
+              {doctorDetail && !editMode && (
                 <p
                   style={{
                     color: "#ff4d4f",
@@ -500,6 +542,19 @@ const DoctorList = () => {
                   Bác sĩ đang làm việc tại cơ sở y tế khác. Các thông tin đã
                   được tự động cập nhật, hãy cung cấp thông tin chuyên khoa khám
                   của bác sĩ này tại cơ sở y tế của bạn.
+                </p>
+              )}
+              {editMode && (
+                <p
+                  style={{
+                    color: "#1890ff",
+                    marginTop: "-20px",
+                    fontSize: "12px",
+                    fontStyle: "italic",
+                  }}
+                >
+                  ℹ️ Mã chứng chỉ hành nghề đã được lưu trong hệ thống và không
+                  thể chỉnh sửa.
                 </p>
               )}
             </Col>
