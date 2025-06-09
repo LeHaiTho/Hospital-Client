@@ -456,7 +456,7 @@ const Appointments = () => {
               icon={<FileAddFilled style={{ color: "green" }} />}
               onClick={() => handleAddExamResult(record)}
             >
-              Cập nhật
+              Tạo kết quả
             </Button>
           </Space>
         </Space>
