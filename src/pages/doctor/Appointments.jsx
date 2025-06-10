@@ -32,7 +32,6 @@ import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import {
   getDetailedExamResultByAppointmentCode,
-  getDoctorDetailedExamResults,
   getPatientExamHistory,
 } from "../../apis/detailedExamResultApi";
 import { getAppointmentsByDoctorId } from "../../apis/appointmentApi";
