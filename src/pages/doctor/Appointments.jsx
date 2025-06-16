@@ -97,18 +97,27 @@ const Appointments = () => {
         });
 
         setUpcomingAppointments(
-          (upcoming || []).map((appointment) => ({
-            id: appointment.id,
-            appointmentCode: appointment.appointment_code,
-            time: `${appointment.appointmentSlot.start_time} - ${appointment.appointmentSlot.end_time}`,
-            date: moment(appointment.doctorSchedule.date).format("DD/MM/YYYY"),
-            patient: appointment.patient.fullname,
-            patientPhone: appointment.patient.phone,
-            patientId: appointment.patient.id,
-            patientType: appointment.patientType,
-            status: appointment.status,
-            notes: appointment.reason,
-          }))
+          (upcoming || [])
+            .map((appointment) => ({
+              id: appointment.id,
+              appointmentCode: appointment.appointment_code,
+              time: `${appointment.appointmentSlot.start_time} - ${appointment.appointmentSlot.end_time}`,
+              date: moment(appointment.doctorSchedule.date).format(
+                "DD/MM/YYYY"
+              ),
+              patient: appointment.patient.fullname,
+              patientPhone: appointment.patient.phone,
+              patientId: appointment.patient.id,
+              patientType: appointment.patientType,
+              status: appointment.status,
+              notes: appointment.reason,
+            }))
+            .sort(
+              (a, b) =>
+                moment(a.date, "DD/MM/YYYY").diff(
+                  moment(b.date, "DD/MM/YYYY")
+                ) || moment(a.time, "HH:mm").diff(moment(b.time, "HH:mm"))
+            ) // Sort by date ascending (gần nhất đến xa nhất)
         );
 
         // Map past appointments individually (not grouped)
