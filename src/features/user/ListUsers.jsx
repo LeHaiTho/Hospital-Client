@@ -125,14 +125,6 @@ const ListUsers = () => {
       if (modalMode === "create") {
         await axiosConfig.post("/users/create-user", payload);
         message.success("Tạo người dùng thành công!");
-      } else if (modalMode === "update") {
-        await axiosConfig.patch(
-          `/users/update-user/${selectedUser?.id}`,
-          payload
-        );
-        console.log(selectedUser?.id);
-        console.log(payload);
-        message.success("Cập nhật người dùng thành công!");
       }
       setModalVisible(false);
       fetchUsers(pagination.current, pagination.pageSize);
@@ -192,11 +184,6 @@ const ListUsers = () => {
   // Table columns
   const columns = [
     {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-    },
-    {
       title: "Họ và tên",
       dataIndex: "fullname",
       key: "fullname",
@@ -243,13 +230,6 @@ const ListUsers = () => {
                 icon={<CiViewList size={24} color="#000" />}
                 type="text"
                 onClick={() => openModal("view", record)}
-              />
-            </Tooltip>
-            <Tooltip placement="bottom" title="Chỉnh sửa">
-              <Button
-                icon={<FiEdit size={22} color="#000" />}
-                type="text"
-                onClick={() => openModal("update", record)}
               />
             </Tooltip>
             {record.isActivated && !record.isDeleted ? (

@@ -285,8 +285,8 @@ const Appointments = () => {
             : "",
 
           hospital: {
-            name: appointment.hospital?.name || "Bệnh viện",
-            address: appointment.hospital?.address || "Địa chỉ bệnh viện",
+            name: appointment.hospital?.name || "Cơ sở y tế",
+            address: appointment.hospital?.address || "Địa chỉ cơ sở y tế",
           },
 
           doctor: appointment.doctor?.user?.fullname || "Bác sĩ",
@@ -739,7 +739,7 @@ const Appointments = () => {
             >
               <Row gutter={[16, 12]}>
                 <Col span={12}>
-                  <Text strong>Bệnh viện: </Text>
+                  <Text strong>Cơ sở y tế: </Text>
                   <Text>
                     {selectedExamRecord?.hospital?.name ||
                       selectedExamRecord?.hospital}

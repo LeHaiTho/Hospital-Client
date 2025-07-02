@@ -10,7 +10,6 @@ import Login from "./pages/auth/Login";
 import AdminLayout from "./utils/layout/adminLayout";
 import DoctorLayout from "./utils/layout/DoctorLayout";
 import ManagerLayout from "./utils/layout/ManagerLayout";
-import StaffLayout from "./utils/layout/StaffLayout";
 import Unauthorized from "./utils/Unauthorized";
 import { useDispatch } from "react-redux";
 import { login, logout, setUserInfo } from "./redux/slices/authSlice";
@@ -65,14 +64,6 @@ const App = () => {
         element={
           <ProtectedRoute role="manager">
             <ManagerLayout />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/staff/*"
-        element={
-          <ProtectedRoute role="staff">
-            <StaffLayout />
           </ProtectedRoute>
         }
       />

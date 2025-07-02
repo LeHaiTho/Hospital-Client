@@ -443,7 +443,7 @@ const ListDoctors = () => {
               </Typography.Text>
             </div>
             <div>
-              <Typography.Text strong>Bệnh viện</Typography.Text>
+              <Typography.Text strong>Cơ sở y tế</Typography.Text>
               <Typography.Text style={{ display: "block", marginTop: 8 }}>
                 {viewDoctor.hospital?.name || "Chưa cung cấp"}
               </Typography.Text>

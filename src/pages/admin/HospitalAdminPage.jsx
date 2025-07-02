@@ -165,7 +165,7 @@ const HospitalAdminPage = () => {
 
   const columns = [
     {
-      title: "Tên bệnh viện",
+      title: "Tên cơ sở y tế",
       dataIndex: "name",
       key: "name",
     },

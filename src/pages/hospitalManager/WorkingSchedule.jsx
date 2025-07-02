@@ -426,7 +426,7 @@ const WorkingSchedule = () => {
       }}
     >
       <h2 style={{ textAlign: "center", textTransform: "uppercase" }}>
-        Lịch hoạt động của bệnh viện
+        Lịch hoạt động của cơ sở
       </h2>
       <div
         style={{

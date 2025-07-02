@@ -256,14 +256,6 @@ const SpecialtiesList = ({
 
   const columns = [
     {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      align: "center",
-      width: 80,
-      render: (text) => <Text strong>{text}</Text>,
-    },
-    {
       title: "Ảnh",
       dataIndex: "photo",
       key: "photo",
